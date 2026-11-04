@@ -464,3 +464,9 @@ code { background: var(--fond-2); padding: 1px 6px; border-radius: 6px; font-siz
   .panneau #theorique { padding-top: 2px; margin-top: 2px; }
 }
 .code-chiffres { font-size: 28px !important; letter-spacing: .4em; text-align: center; }
+
+/* Caisse fausse : écart en rouge */
+.txt-ecart { color: var(--rouge) !important; }
+.msg-ecart { color: var(--rouge) !important; }
+.statut.rouge { background: var(--rouge-pale); color: var(--rouge); }
+.bloc.square.ecart-rouge b { color: var(--rouge); }

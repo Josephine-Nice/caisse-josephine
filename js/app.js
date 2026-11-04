@@ -188,7 +188,7 @@ function majTotaux() {
     else if (e === 0) statut = `<div class="statut vert">✓ Caisse juste</div>`;
     else statut = `<p class="msg-ecart">Recomptez une fois. Si l’écart persiste, enregistrez le vrai montant.</p>`;
     ctl.innerHTML = `<div class="ligne-total"><span>Attendu</span><b>${euros(FOND_DE_CAISSE)}</b></div>
-      <div class="ligne-total"><span>Écart</span><b class="${t.total && e ? 'txt-orange' : t.total ? 'txt-vert' : ''}">${t.total ? euros(e, { signe: true }) : '—'}</b></div>${statut}`;
+      <div class="ligne-total"><span>Écart</span><b class="${t.total && e ? 'txt-ecart' : t.total ? 'txt-vert' : ''}">${t.total ? euros(e, { signe: true }) : '—'}</b></div>${statut}`;
   }
 }
 
@@ -241,11 +241,9 @@ function blocTheorique(b, total) {
     <div class="ligne-total"><span>Ventes espèces</span><b>${it.ventes === null ? '—' : euros(it.ventes, { signe: true })}</b></div>
     <small class="sous-ligne">${ventesInfo} <button class="lien mini" data-act="actualiserVentes">Actualiser</button></small>
     ${it.remb ? `<div class="ligne-total"><span>Remboursements</span><b>${euros(-it.remb, { signe: true })}</b></div>` : ''}
-    <div class="ligne-total"><span>Mouvements divers</span><b>${euros(sommeMouvements(it.mouvements), { signe: true })}</b></div>
-    ${mvts}
-    <button class="lien mini ajout" data-act="ajouterMouvement">+ Ajouter un mouvement</button>
+    ${it.mouvements.length ? `<div class="ligne-total"><span>Mouvements divers</span><b>${euros(sommeMouvements(it.mouvements), { signe: true })}</b></div>${mvts}` : ''}
     <div class="ligne-total theo"><span>Caisse théorique</span><b>${it.theorique === null ? '—' : euros(it.theorique)}</b></div>
-    <div class="ligne-total ecart-l"><span>Écart</span><b class="${it.ecart ? 'txt-orange' : it.ecart === 0 && total ? 'txt-vert' : ''}">${it.ecart === null || !total ? '—' : euros(it.ecart, { signe: true })}</b></div>
+    <div class="ligne-total ecart-l"><span>Écart</span><b class="${it.ecart ? 'txt-ecart' : it.ecart === 0 && total ? 'txt-vert' : ''}">${it.ecart === null || !total ? '—' : euros(it.ecart, { signe: true })}</b></div>
     ${statut}`;
 }
 
@@ -369,7 +367,7 @@ function vueRepartition() {
       <div class="ligne-total fond-ligne"><span>Fond de caisse</span><b class="${exact ? 'txt-vert' : 'txt-orange'}">${euros(r.fond)}</b></div>
       <div class="ligne-total"><span></span><small class="txt-gris">attendu ${euros(FOND_DE_CAISSE)}</small></div>
       <div class="ligne-total general"><span>Enveloppe coffre</span><b class="txt-rouge">${euros(r.enveloppe)}</b></div>
-      ${(() => { const it = infoTheorique(b, t.total); return `<div class="ligne-total ecart-ligne"><span>Écart de caisse</span><b class="${it.ecart ? 'txt-orange' : it.ecart === 0 ? 'txt-vert' : ''}">${it.ecart === null ? 'non calculé' : it.ecart ? euros(it.ecart, { signe: true }) : 'juste'}</b></div>`; })()}
+      ${(() => { const it = infoTheorique(b, t.total); return `<div class="ligne-total ecart-ligne"><span>Écart de caisse</span><b class="${it.ecart ? 'txt-ecart' : it.ecart === 0 ? 'txt-vert' : ''}">${it.ecart === null ? 'non calculé' : it.ecart ? euros(it.ecart, { signe: true }) : 'juste'}</b></div>`; })()}
       ${b.gardeAuto ? '' : '<button class="lien" data-act="recalculer">Revenir au calcul automatique</button>'}
       <button class="principal valider" data-act="valider">Valider et enregistrer</button>
       <button class="secondaire" data-act="versComptage">‹ Modifier le comptage</button>
@@ -455,14 +453,14 @@ function ouvrirValidation() {
     const e = ecart(t.total);
     alerte = e !== 0;
     resumeTxt = `<div class="ligne-total"><span>Total compté</span><b>${euros(t.total)}</b></div>
-      <div class="ligne-total"><span>Écart</span><b class="${e ? 'txt-orange' : 'txt-vert'}">${e ? euros(e, { signe: true }) : 'Caisse juste'}</b></div>`;
+      <div class="ligne-total"><span>Écart</span><b class="${e ? 'txt-ecart' : 'txt-vert'}">${e ? euros(e, { signe: true }) : 'Caisse juste'}</b></div>`;
   } else {
     const { r } = calculRepartition();
     const it = infoTheorique(b, t.total);
     alerte = r.fond !== FOND_DE_CAISSE || !!it.ecart;
     resumeTxt = `<div class="ligne-total"><span>Total compté</span><b>${euros(t.total)}</b></div>
       <div class="ligne-total"><span>Caisse théorique</span><b>${it.theorique === null ? 'non calculée' : euros(it.theorique)}</b></div>
-      <div class="ligne-total"><span>Écart de caisse</span><b class="${it.ecart ? 'txt-orange' : it.ecart === 0 ? 'txt-vert' : ''}">${it.ecart === null ? '—' : it.ecart ? euros(it.ecart, { signe: true }) : 'Caisse juste'}</b></div>
+      <div class="ligne-total"><span>Écart de caisse</span><b class="${it.ecart ? 'txt-ecart' : it.ecart === 0 ? 'txt-vert' : ''}">${it.ecart === null ? '—' : it.ecart ? euros(it.ecart, { signe: true }) : 'Caisse juste'}</b></div>
       <div class="ligne-total"><span>Fond de caisse</span><b class="${r.fond !== FOND_DE_CAISSE ? 'txt-orange' : 'txt-vert'}">${euros(r.fond)}</b></div>
       <div class="ligne-total"><span>Enveloppe coffre</span><b class="txt-rouge">${euros(r.enveloppe)}</b></div>`;
     if (r.fond !== FOND_DE_CAISSE) confirmFond = `<label class="confirmer"><input type="checkbox" id="conf-fond">
@@ -557,7 +555,7 @@ function vueFin() {
       <div class="coche">✓</div>
       <h1>Comptage d’ouverture enregistré</h1>
       <p class="sous">${esc(dateLongue(c.date))} à ${c.heure.slice(0, 5)}${c.prenom ? ` · ${esc(c.prenom)}` : ''}</p>
-      <div class="statut grand ${juste ? 'vert' : 'orange'}">${juste ? 'Caisse juste : 100,00 €' : `Compté ${euros(c.total)} · écart ${euros(c.ecart, { signe: true })}`}</div>
+      <div class="statut grand ${juste ? 'vert' : 'rouge'}">${juste ? 'Caisse juste : 100,00 €' : `Compté ${euros(c.total)} · écart ${euros(c.ecart, { signe: true })}`}</div>
       <div class="boutons-fin">
       <button class="principal" data-act="terminer">Terminer</button></div>
     </main>`;
@@ -571,7 +569,7 @@ function vueFin() {
     <p class="sous">${esc(dateLongue(c.date))} à ${c.heure.slice(0, 5)}${c.prenom ? ` · ${esc(c.prenom)}` : ''}</p>
     ${c.fondExact ? '' : `<div class="message orange">Fond de caisse laissé : ${euros(c.fond)} au lieu de ${euros(FOND_DE_CAISSE)}.</div>`}
     <div class="fin-grille">
-      <section class="bloc square ${!aTheo ? '' : c.ecartTheorique ? 'ecart-orange' : 'ecart-vert'}"><span>Écart de caisse</span>
+      <section class="bloc square ${!aTheo ? '' : c.ecartTheorique ? 'ecart-rouge' : 'ecart-vert'}"><span>Écart de caisse</span>
         <b>${!aTheo ? 'non calculé' : c.ecartTheorique ? euros(c.ecartTheorique, { signe: true }) : 'Caisse juste'}</b>
         <small>${aTheo ? `Caisse théorique ${euros(c.theorique)} · comptée ${euros(c.total)}` : 'Ventes Square indisponibles : le Google Sheet fera le calcul.'}</small></section>
       <section class="bloc env">
@@ -612,9 +610,9 @@ function vueHistorique() {
 }
 
 function infoEcart(c) {
-  if (c.type === 'ouverture') return c.ecart ? `<span class="txt-orange">Écart ${euros(c.ecart, { signe: true })}</span>` : '';
+  if (c.type === 'ouverture') return c.ecart ? `<span class="txt-ecart">Écart ${euros(c.ecart, { signe: true })}</span>` : '';
   const parts = [];
-  if (typeof c.ecartTheorique === 'number') parts.push(c.ecartTheorique ? `<span class="txt-orange">Écart ${euros(c.ecartTheorique, { signe: true })}</span>` : '<span class="txt-vert">Caisse juste</span>');
+  if (typeof c.ecartTheorique === 'number') parts.push(c.ecartTheorique ? `<span class="txt-ecart">Écart ${euros(c.ecartTheorique, { signe: true })}</span>` : '<span class="txt-vert">Caisse juste</span>');
   if (c.fond !== FOND_DE_CAISSE) parts.push(`<span class="txt-orange">Fond ${euros(c.fond)}</span>`);
   return parts.join('');
 }
@@ -674,7 +672,7 @@ function blocControleDetail(c) {
     <div class="ligne-total"><span>Mouvements divers</span><b>${euros(sommeMouvements(c.mouvements), { signe: true })}</b></div>${mv}
     <div class="ligne-total fort"><span>Caisse théorique</span><b>${euros(c.theorique)}</b></div>
     <div class="ligne-total"><span>Caisse comptée</span><b>${euros(c.total)}</b></div>
-    <div class="ligne-total fort"><span>Écart de caisse</span><b class="${c.ecartTheorique ? 'txt-orange' : 'txt-vert'}">${c.ecartTheorique ? euros(c.ecartTheorique, { signe: true }) : 'Caisse juste'}</b></div>
+    <div class="ligne-total fort"><span>Écart de caisse</span><b class="${c.ecartTheorique ? 'txt-ecart' : 'txt-vert'}">${c.ecartTheorique ? euros(c.ecartTheorique, { signe: true }) : 'Caisse juste'}</b></div>
   </div>`;
 }
 
@@ -692,7 +690,7 @@ function vueDetail() {
       <div><span>Google Sheet</span><b class="${c.sync === 'envoye' ? 'txt-vert' : 'txt-gris'}">${c.sync === 'envoye' ? 'Envoyé' : 'En attente d’envoi'}</b></div>
     </div>
     ${ouv ? `<div class="trio grand-trio"><div><span>Attendu</span><b>${euros(c.attendu)}</b></div><div><span>Compté</span><b>${euros(c.total)}</b></div>
-      <div><span>Écart</span><b class="${c.ecart ? 'txt-orange' : 'txt-vert'}">${c.ecart ? euros(c.ecart, { signe: true }) : '0,00 € · juste'}</b></div></div>`
+      <div><span>Écart</span><b class="${c.ecart ? 'txt-ecart' : 'txt-vert'}">${c.ecart ? euros(c.ecart, { signe: true }) : '0,00 € · juste'}</b></div></div>`
       : `<div class="trio grand-trio"><div><span>Total compté</span><b>${euros(c.total)}</b></div><div><span>Fond laissé</span><b class="${c.fondExact ? 'txt-vert' : 'txt-orange'}">${euros(c.fond)}</b></div>
       <div><span>Enveloppe coffre</span><b class="txt-rouge">${euros(c.enveloppe)}</b></div></div>
       ${blocControleDetail(c)}`}

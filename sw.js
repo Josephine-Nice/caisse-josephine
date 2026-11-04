@@ -4,7 +4,7 @@
  * Stratégie « réseau d'abord » : avec du wifi, l'iPad récupère toujours la
  * dernière version publiée ; sans wifi, il utilise la copie en cache.
  */
-const CACHE = 'caisse-josephine-v1';
+const CACHE = 'caisse-josephine-v2';
 const FICHIERS = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/app.js', 'js/calc.js', 'js/db.js', 'js/sync.js', 'js/pdf.js', 'js/visuels.js', 'js/config.js',
