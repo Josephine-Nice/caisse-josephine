@@ -321,17 +321,20 @@ function ouvrirValidation() {
   if (ouv) {
     const e = ecart(t.total);
     alerte = e !== 0;
-    resumeTxt = `Total compté <b>${euros(t.total)}</b> · ${e === 0 ? '<span class="txt-vert">caisse juste</span>' : `<span class="txt-orange">écart ${euros(e, { signe: true })}</span>`}`;
+    resumeTxt = `<div class="ligne-total"><span>Total compté</span><b>${euros(t.total)}</b></div>
+      <div class="ligne-total"><span>Écart</span><b class="${e ? 'txt-orange' : 'txt-vert'}">${e ? euros(e, { signe: true }) : 'Caisse juste'}</b></div>`;
   } else {
     const { r } = calculRepartition();
     alerte = r.fond !== FOND_DE_CAISSE;
-    resumeTxt = `Total compté <b>${euros(t.total)}</b> · fond <b class="${alerte ? 'txt-orange' : ''}">${euros(r.fond)}</b> · enveloppe <b>${euros(r.enveloppe)}</b>`;
+    resumeTxt = `<div class="ligne-total"><span>Total compté</span><b>${euros(t.total)}</b></div>
+      <div class="ligne-total"><span>Fond de caisse</span><b class="${alerte ? 'txt-orange' : 'txt-vert'}">${euros(r.fond)}</b></div>
+      <div class="ligne-total"><span>Enveloppe coffre</span><b class="txt-rouge">${euros(r.enveloppe)}</b></div>`;
     if (alerte) confirmFond = `<label class="confirmer"><input type="checkbox" id="conf-fond">
       <span>Je confirme enregistrer avec un fond de caisse de <b>${euros(r.fond)}</b> au lieu de ${euros(FOND_DE_CAISSE)}.</span></label>`;
   }
   const choisi = etat.dernierPrenom;
   ouvrirModale(`<h2>Valider et enregistrer</h2>
-    <p class="recap-modale">${badgeType(b.type)} ${resumeTxt}</p>
+    <div class="recap-modale">${badgeType(b.type)}<div class="recap-lignes">${resumeTxt}</div></div>
     <label class="etiquette">Qui a compté ?</label>
     <div class="prenoms" id="prenoms">
       ${etat.prenoms.map(p => `<button class="puce ${p === choisi ? 'choisie' : ''}" data-act="prenom" data-p="${esc(p)}">${esc(p)}</button>`).join('')}

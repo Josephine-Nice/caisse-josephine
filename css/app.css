@@ -381,3 +381,10 @@ code { background: var(--fond-2); padding: 1px 6px; border-radius: 6px; font-siz
   .table-repart th, .table-repart td { width: auto; }
   .table-repart th:first-child, .table-repart td:first-child { padding-left: 4px; }
 }
+
+/* Fenêtre de validation : récapitulatif aligné */
+.recap-modale { display: block; margin: 6px 0 4px; }
+.recap-lignes { background: var(--fond-2); border-radius: 12px; padding: 4px 14px; margin-top: 10px; }
+.recap-lignes .ligne-total { padding: 6px 0; }
+.recap-lignes .ligne-total + .ligne-total { border-top: 1px solid var(--ligne); }
+.recap-lignes .ligne-total b { font-size: 19px; }
