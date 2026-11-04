@@ -325,3 +325,41 @@ code { background: var(--fond-2); padding: 1px 6px; border-radius: 6px; font-siz
 .saisir-square b { font-size: 76px; font-weight: 850; letter-spacing: -.02em; line-height: 1.05; color: var(--encre); }
 .saisir-square small { font-size: 16px; color: #4A5D78; }
 @media (max-width: 700px) { .saisir-square b { font-size: 54px; } }
+
+/* ---------- Écran de comptage : liste à gauche, panneau des totaux à droite ---------- */
+.comptage-grille { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 28px; max-width: 1200px; margin: 0 auto; padding: 6px 20px 30px; align-items: start; }
+.comptage-grille .comptage { display: block; padding: 0; max-width: none; margin: 0; }
+.raz-zone { padding: 22px 4px 8px; }
+.panneau { position: sticky; top: 76px; background: var(--fond-2); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 4px; margin-top: 16px; }
+.ligne-total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 7px 0; }
+.ligne-total span { color: var(--gris); font-weight: 600; font-size: 16px; }
+.ligne-total b { font-size: 21px; font-weight: 650; }
+.ligne-total.general { border-top: 1.5px solid var(--encre); margin-top: 6px; padding-top: 14px; }
+.ligne-total.general span { color: var(--rouge); font-weight: 750; font-size: 18px; }
+.ligne-total.general b { font-size: 40px; font-weight: 850; letter-spacing: -.02em; line-height: 1.05; }
+.panneau .controle { flex: none; border: 0; padding: 12px 0 0; margin-top: 8px; border-top: 1px solid var(--ligne); gap: 0; display: flex; flex-direction: column; }
+.panneau .controle .statut { margin-top: 8px; }
+.panneau .msg-ecart { margin-top: 8px; }
+.panneau .valider { margin-top: 16px; min-height: 64px; font-size: 19px; width: 100%; }
+/* iPad portrait */
+@media (max-width: 1000px) {
+  .comptage-grille { grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; }
+  .comptage-grille .ligne { grid-template-columns: 46px 62px minmax(0, 1fr) 92px; gap: 6px; }
+  .comptage-grille .saisie input { width: 70px; }
+  .comptage-grille .visuel.piece { width: 42px; height: 42px; } .comptage-grille .visuel.billet { width: 46px; height: 28px; }
+  .ligne-total.general { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .ligne-total.general b { font-size: 38px; }
+}
+/* Téléphone : le panneau devient une barre fixe en bas */
+@media (max-width: 760px) {
+  .comptage-grille { display: block; padding: 0 12px 0; }
+  .comptage-grille .ligne { grid-template-columns: 44px 1fr auto; gap: 2px 8px; }
+  .comptage-grille .saisie input { width: 66px; }
+  .panneau { position: sticky; top: auto; bottom: 0; margin: 12px -12px 0; border-radius: 18px 18px 0 0; padding: 10px 14px calc(12px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 16px rgba(0,0,0,.06); }
+  .panneau .detail-total, .panneau .msg-ecart { display: none; }
+  .ligne-total.general { flex-direction: row; align-items: baseline; border-top: 0; margin-top: 0; padding-top: 2px; }
+  .ligne-total.general b { font-size: 28px; }
+  .panneau .controle { padding-top: 4px; margin-top: 2px; }
+  .panneau .controle .ligne-total { padding: 2px 0; }
+  .panneau .valider { margin-top: 8px; min-height: 52px; font-size: 17px; }
+}

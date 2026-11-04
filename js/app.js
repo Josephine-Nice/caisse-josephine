@@ -155,24 +155,20 @@ function ligneComptage(v) {
 function vueComptage() {
   const b = etat.brouillon, ouv = b.type === 'ouverture';
   return entete({ retour: { act: 'onglet', v: 'accueil', texte: 'Accueil' }, titre: ouv ? 'Ouverture – matin' : 'Clôture – soir', badge: '' }) + `
-  <div class="resume" id="resume">
-    <div class="totaux">
-      <div><span>Total des pièces</span><b id="t-p"></b></div>
-      <div><span>Total des billets</span><b id="t-b"></b></div>
-      <div class="general"><span>Total général de la caisse</span><b id="t-g"></b></div>
-    </div>
-    ${ouv ? '<div class="controle" id="controle"></div>' : ''}
-  </div>
-  <main class="comptage">
-    <section class="groupe"><h2>Pièces</h2>${PIECES.map(ligneComptage).join('')}</section>
-    <section class="groupe"><h2>Billets</h2>${BILLETS.map(ligneComptage).join('')}
-      <p class="aide">Saisissez le nombre de pièces et de billets : le total se calcule tout seul. La touche « suivant » du clavier passe à la ligne suivante.</p>
-    </section>
-  </main>
-  <footer class="actions">
-    <button class="secondaire" data-act="raz">Remettre à zéro</button>
-    <button class="principal" data-act="${ouv ? 'valider' : 'versRepartition'}">${ouv ? 'Valider et enregistrer le comptage' : 'Suivant : répartition caisse / coffre ›'}</button>
-  </footer>`;
+  <div class="comptage-grille">
+    <main class="comptage">
+      <section class="groupe"><h2>Pièces</h2>${PIECES.map(ligneComptage).join('')}</section>
+      <section class="groupe"><h2>Billets</h2>${BILLETS.map(ligneComptage).join('')}</section>
+      <div class="raz-zone"><button class="secondaire" data-act="raz">Remettre à zéro</button></div>
+    </main>
+    <aside class="panneau">
+      <div class="ligne-total detail-total"><span>Total des pièces</span><b id="t-p"></b></div>
+      <div class="ligne-total detail-total"><span>Total des billets</span><b id="t-b"></b></div>
+      <div class="ligne-total general"><span>Total général</span><b id="t-g"></b></div>
+      ${ouv ? '<div class="controle" id="controle"></div>' : ''}
+      <button class="principal valider" data-act="${ouv ? 'valider' : 'versRepartition'}">${ouv ? 'Valider et enregistrer' : 'Suivant : répartition caisse / coffre ›'}</button>
+    </aside>
+  </div>`;
 }
 
 function majTotaux() {
@@ -187,11 +183,9 @@ function majTotaux() {
     let statut;
     if (t.total === 0) statut = `<div class="statut neutre">Saisissez les quantités</div>`;
     else if (e === 0) statut = `<div class="statut vert">✓ Caisse juste</div>`;
-    else statut = `<div class="statut orange">Écart ${euros(e, { signe: true })}</div>
-      <p class="msg-ecart">Recomptez une fois. Si l’écart persiste, enregistrez le vrai montant.</p>`;
-    ctl.innerHTML = `<div class="trio"><div><span>Attendu</span><b>${euros(FOND_DE_CAISSE)}</b></div>
-      <div><span>Compté</span><b>${euros(t.total)}</b></div>
-      <div><span>Écart</span><b class="${t.total && e ? 'txt-orange' : t.total ? 'txt-vert' : ''}">${t.total ? euros(e, { signe: true }) : '—'}</b></div></div>${statut}`;
+    else statut = `<p class="msg-ecart">Recomptez une fois. Si l’écart persiste, enregistrez le vrai montant.</p>`;
+    ctl.innerHTML = `<div class="ligne-total"><span>Attendu</span><b>${euros(FOND_DE_CAISSE)}</b></div>
+      <div class="ligne-total"><span>Écart</span><b class="${t.total && e ? 'txt-orange' : t.total ? 'txt-vert' : ''}">${t.total ? euros(e, { signe: true }) : '—'}</b></div>${statut}`;
   }
 }
 
