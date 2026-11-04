@@ -259,24 +259,24 @@ function vueRepartition() {
   }).join('');
 
   return entete({ retour: { act: 'versComptage', texte: 'Comptage' }, titre: 'Répartition caisse / coffre' }) + `
-  <div class="resume repart">
-    <div class="fond ${exact ? 'ok' : 'alerte'}"><span>Fond de caisse</span><b>${euros(r.fond)}</b><small>/ ${euros(FOND_DE_CAISSE)}</small></div>
-    <div class="enveloppe"><span>Montant de l’enveloppe coffre</span><b>${euros(r.enveloppe)}</b></div>
-  </div>
-  <main class="repartition">
-    ${msgs.join('')}
-    <table class="table-repart">
-      <thead><tr><th>Valeur</th><th class="num">Compté</th><th>Va au coffre</th><th>Reste en caisse</th></tr></thead>
-      <tbody>${lignes || '<tr><td colspan="4" class="vide">Aucune pièce ni aucun billet compté.</td></tr>'}</tbody>
-      <tfoot><tr><td>Total</td><td class="num">${euros(t.total)}</td><td><b>${euros(r.enveloppe)}</b></td><td><b>${euros(r.fond)}</b></td></tr></tfoot>
-    </table>
-    <p class="aide">La répartition est calculée automatiquement : 100,00 € restent dans la caisse, en gardant les pièces (${MAX_PIECES_PAR_VALEUR} maximum par valeur) et les plus petits billets. Vous pouvez ajuster avec + et −.
-    ${b.gardeAuto ? '' : '<button class="lien" data-act="recalculer">Revenir au calcul automatique</button>'}</p>
-  </main>
-  <footer class="actions">
-    <button class="secondaire" data-act="versComptage">‹ Modifier le comptage</button>
-    <button class="principal" data-act="valider">Valider et enregistrer le comptage</button>
-  </footer>`;
+  <div class="comptage-grille repart-grille">
+    <main class="repartition">
+      ${msgs.join('')}
+      <table class="table-repart">
+        <thead><tr><th>Valeur</th><th class="num">Compté</th><th>Va au coffre</th><th>Reste en caisse</th></tr></thead>
+        <tbody>${lignes || '<tr><td colspan="4" class="vide">Aucune pièce ni aucun billet compté.</td></tr>'}</tbody>
+        <tfoot><tr><td>Total</td><td class="num">${euros(t.total)}</td><td><b>${euros(r.enveloppe)}</b></td><td><b>${euros(r.fond)}</b></td></tr></tfoot>
+      </table>
+    </main>
+    <aside class="panneau">
+      <div class="ligne-total fond-ligne"><span>Fond de caisse</span><b class="${exact ? 'txt-vert' : 'txt-orange'}">${euros(r.fond)}</b></div>
+      <div class="ligne-total"><span></span><small class="txt-gris">attendu ${euros(FOND_DE_CAISSE)}</small></div>
+      <div class="ligne-total general"><span>Enveloppe coffre</span><b class="txt-rouge">${euros(r.enveloppe)}</b></div>
+      ${b.gardeAuto ? '' : '<button class="lien" data-act="recalculer">Revenir au calcul automatique</button>'}
+      <button class="principal valider" data-act="valider">Valider et enregistrer</button>
+      <button class="secondaire" data-act="versComptage">‹ Modifier le comptage</button>
+    </aside>
+  </div>`;
 }
 
 function ajusterGarde(v, delta) {

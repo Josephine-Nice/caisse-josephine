@@ -388,3 +388,49 @@ code { background: var(--fond-2); padding: 1px 6px; border-radius: 6px; font-siz
 .recap-lignes .ligne-total { padding: 6px 0; }
 .recap-lignes .ligne-total + .ligne-total { border-top: 1px solid var(--ligne); }
 .recap-lignes .ligne-total b { font-size: 19px; }
+
+/* ---------- Tout voir sans faire défiler (iPad) ---------- */
+.comptage-grille .groupe h2 { display: none; }
+.comptage-grille .groupe + .groupe { border-top: 3px solid var(--ligne); }
+.comptage-grille .ligne { min-height: 52px; padding: 2px 4px; }
+.comptage-grille .pm { height: 44px; }
+.comptage-grille .saisie input { height: 44px; font-size: 21px; }
+.comptage-grille .visuel.piece { width: 40px; height: 40px; }
+.comptage-grille .visuel.billet { width: 50px; height: 30px; }
+.raz-zone { padding: 10px 4px 0; }
+.raz-zone .secondaire { min-height: 46px; }
+/* Répartition en deux colonnes : tableau à gauche, panneau à droite */
+.repart-grille .repartition { max-width: none; margin: 0; padding: 10px 0 0; }
+.repart-grille .table-repart td { padding: 3px 8px; height: 52px; }
+.repart-grille .table-repart th { padding: 8px; }
+.repart-grille .table-repart .pm { width: 44px; height: 44px; }
+.repart-grille .table-repart tfoot td { padding-top: 10px; height: auto; }
+.repart-grille .coffre small { font-size: 11.5px; margin-top: 1px; }
+.repart-grille .panneau { gap: 2px; }
+.repart-grille .panneau .ligne-total.fond-ligne b { font-size: 28px; font-weight: 800; }
+.repart-grille .panneau .ligne-total small { font-size: 14px; }
+.repart-grille .panneau .ligne-total + .ligne-total:not(.general) { padding-top: 0; }
+.repart-grille .panneau .secondaire { margin-top: 8px; min-height: 48px; width: 100%; }
+.repart-grille .panneau .lien { align-self: flex-start; }
+@media (max-width: 760px) {
+  .repart-grille .table-repart td { height: auto; padding: 6px 3px; }
+  .repart-grille .panneau .secondaire { display: none; }
+}
+/* ajustement final de hauteur */
+.comptage-grille { padding-bottom: 10px; }
+.comptage-grille .ligne { min-height: 50px; padding: 1px 4px; }
+.repart-grille .table-repart td { height: 48px; padding: 2px 8px; }
+.repart-grille .table-repart .pm { width: 42px; height: 42px; }
+.repart-grille .table-repart th { padding: 6px 8px; }
+.repart-grille .table-repart tfoot td { padding-top: 8px; padding-bottom: 4px; }
+.repart-grille .panneau .ligne-total.general { flex-direction: column; align-items: flex-start; gap: 2px; }
+@media (max-width: 760px) {
+  .repart-grille .table-repart .pm { width: 34px; height: 38px; font-size: 20px; }
+  .repart-grille .table-repart td { height: auto; padding: 5px 2px; }
+  .repart-grille .table-repart td.val { font-size: 14px; }
+  .repart-grille .saisie.petite { gap: 2px; }
+  .repart-grille .saisie.petite b { min-width: 22px; font-size: 16px; }
+  .repart-grille .panneau .ligne-total small { display: none; }
+  .repart-grille .panneau .ligne-total.general { flex-direction: row; align-items: baseline; }
+  .repart-grille .panneau .ligne-total.fond-ligne b { font-size: 22px; }
+}
