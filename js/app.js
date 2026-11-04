@@ -337,7 +337,7 @@ function ouvrirValidation() {
       ${etat.prenoms.map(p => `<button class="puce ${p === choisi ? 'choisie' : ''}" data-act="prenom" data-p="${esc(p)}">${esc(p)}</button>`).join('')}
     </div>
     <input id="prenom-nouveau" type="text" placeholder="${etat.prenoms.length ? 'Autre prénom' : 'Votre prénom'}" autocomplete="off" autocapitalize="words" maxlength="40">
-    <label class="etiquette ${alerte ? 'important' : ''}" for="observation">${alerte ? 'Observation — fortement recommandée (expliquez l’écart)' : 'Observation (facultative)'}</label>
+    <label class="etiquette ${alerte ? 'important' : ''}" for="observation">Observation</label>
     <textarea id="observation" rows="${alerte ? 3 : 2}" maxlength="1000" class="${alerte ? 'important' : ''}" placeholder="${alerte ? 'Ex. : recompté deux fois, il manque…' : ''}"></textarea>
     ${confirmFond}
     <div class="boutons"><button class="secondaire" data-act="fermerModale">Annuler</button>
