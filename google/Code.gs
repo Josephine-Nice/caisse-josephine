@@ -125,9 +125,8 @@ function installer() {
   ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'verifierComptages').forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('verifierComptages').timeBased().everyMinutes(5).create();
 
-  try {
-    SpreadsheetApp.getUi().alert('Caisse Joséphine', 'Installation terminée.\n\nÉtape suivante (voir le guide) : Déployer › Nouveau déploiement › Application Web.', SpreadsheetApp.getUi().ButtonSet.OK);
-  } catch (e) { /* lancé depuis l’éditeur : pas de fenêtre */ }
+  // Message discret (non bloquant) dans le Sheet.
+  ss.toast('Installation terminée. Étape suivante : Déployer › Nouveau déploiement › Application Web.', 'Caisse Joséphine', 10);
 }
 
 function feuille_(nom, creer) {
