@@ -417,8 +417,12 @@ function vueFin() {
       <div class="coche">✓</div>
       <h1>Comptage d’ouverture enregistré</h1>
       <p class="sous">${esc(dateLongue(c.date))} à ${c.heure.slice(0, 5)}${c.prenom ? ` · ${esc(c.prenom)}` : ''}</p>
-      <div class="statut grand ${juste ? 'vert' : 'orange'}">${juste ? 'Caisse juste : 100,00 €' : `Compté ${euros(c.total)} · écart ${euros(c.ecart, { signe: true })}`}</div>
-      <div class="rappel"><b>Pensez à commencer la session de caisse sur Square avant la première vente.</b></div>
+      <div class="saisir-square">
+        <span>Saisir dans Square</span>
+        <b>${euros(c.total)}</b>
+        <small>pour commencer la session de caisse, avant la première vente</small>
+      </div>
+      <div class="statut ${juste ? 'vert' : 'orange'}">${juste ? 'Caisse juste' : `Écart ${euros(c.ecart, { signe: true })} par rapport à 100,00 €`}</div>
       <div class="boutons-fin"><button class="secondaire" data-act="pdf" data-id="${c.id}">Exporter en PDF</button>
       <button class="principal" data-act="terminer">Terminer</button></div>
     </main>`;

@@ -319,3 +319,9 @@ code { background: var(--fond-2); padding: 1px 6px; border-radius: 6px; font-siz
   .fond { flex-direction: column; gap: 0; padding: 8px 12px; }
 }
 .date-jour::first-letter, .jour h3::first-letter, .env-date::first-letter, .titre-barre span::first-letter { text-transform: uppercase; }
+/* Fin d'ouverture : montant à saisir dans Square, en très grand */
+.saisir-square { display: flex; flex-direction: column; align-items: center; gap: 4px; background: #EEF2F7; color: #20395C; border-radius: 20px; padding: 26px 20px; margin: 18px 0 14px; }
+.saisir-square span { font-size: 22px; font-weight: 700; }
+.saisir-square b { font-size: 76px; font-weight: 850; letter-spacing: -.02em; line-height: 1.05; color: var(--encre); }
+.saisir-square small { font-size: 16px; color: #4A5D78; }
+@media (max-width: 700px) { .saisir-square b { font-size: 54px; } }
