@@ -36,6 +36,7 @@ const R = {
   cle: "Clé secrète de l'iPad",
   codeSuivi: "Code d'accès Suivi caisse",
   actives: 'Alertes activées',
+  codeResp: 'Code responsable (suppression sur l’iPad)',
   fermetures: 'Dates de fermeture exceptionnelle',
 };
 
@@ -106,7 +107,7 @@ function installer() {
     [R.cle, existants[R.cle] || code_(), 'À saisir une fois sur l’iPad (Historique › Réglages). Ne la communiquez à personne d’autre.'],
     [R.codeSuivi, existants[R.codeSuivi] || code_(), 'Code d’accès de la page Suivi caisse (pour Nathalie et vous). Changez-le pour retirer un accès.'],
     [R.actives, existants[R.actives] || 'Oui', 'Mettez « Non » pour suspendre toutes les alertes (ex. : fermeture pour congés).'],
-    ['', '', ''],
+    [R.codeResp, existants[R.codeResp] || String(1000 + Math.floor(Math.random() * 9000)), '4 chiffres ou plus, pour vous et Nathalie : demandé sur l’iPad pour supprimer un comptage ou effacer l’historique.'],
     [R.fermetures, '', 'Une date par ligne dans la colonne B, sous cette ligne (ex. : 25/12/2026). Aucune alerte ces jours-là.'],
   ];
   const anciennesFermetures = lireFermeturesBrutes_();
@@ -115,7 +116,7 @@ function installer() {
   if (anciennesFermetures.length) r.getRange(13, 2, anciennesFermetures.length, 1).setValues(anciennesFermetures.map(x => [x]));
   r.getRange('A1:C1').setFontWeight('bold').setBackground('#1D1B1A').setFontColor('#FFFFFF');
   r.getRange('A2:A12').setFontWeight('bold');
-  r.getRange('B2:B10').setBackground('#FFF8DB');
+  r.getRange('B2:B11').setBackground('#FFF8DB');
   r.getRange('A12:C12').setBackground('#F4F2F0');
   r.setColumnWidth(1, 290); r.setColumnWidth(2, 330); r.setColumnWidth(3, 560);
   r.getRange('C:C').setWrap(true).setFontColor('#6E6864');
@@ -176,6 +177,7 @@ function lireReglages_() {
     cle: (b[R.cle] || '').toUpperCase(),
     codeSuivi: (b[R.codeSuivi] || '').toUpperCase(),
     actives: !/^non/i.test(b[R.actives] || 'Oui'),
+    codeResp: String(b[R.codeResp] || '').trim(),
     fermetures: lireFermeturesBrutes_().map(dateIso_).filter(Boolean),
   };
 }
@@ -237,6 +239,7 @@ function doPost(e) {
 
   if (!r.cle || !egal_(String(corps.cle || '').toUpperCase().trim(), r.cle)) return json_({ ok: false, erreur: 'cle' });
   if (corps.action === 'test') return json_({ ok: true });
+  if (corps.action === 'verifierResponsable') return json_(verifierResponsable_(String(corps.code || '').trim(), r));
   if (corps.action === 'enregistrer') return json_(enregistrer_(corps.comptage, r));
   if (corps.action === 'ventesEspeces') {
     const iso = /^\d{4}-\d{2}-\d{2}$/.test(corps.date || '') ? corps.date : Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
@@ -246,6 +249,16 @@ function doPost(e) {
     return json_(sq);
   }
   return json_({ ok: false, erreur: 'action' });
+}
+
+/** Code responsable : 5 essais faux maximum, puis blocage 15 minutes. */
+function verifierResponsable_(code, r) {
+  const cache = CacheService.getScriptCache();
+  const essais = Number(cache.get('essais_resp') || 0);
+  if (essais >= 5) return { ok: false, erreur: 'bloque' };
+  if (r.codeResp && code && egal_(code, r.codeResp)) { cache.remove('essais_resp'); return { ok: true }; }
+  cache.put('essais_resp', String(essais + 1), 900);
+  return { ok: false, erreur: 'code' };
 }
 
 function json_(o) {

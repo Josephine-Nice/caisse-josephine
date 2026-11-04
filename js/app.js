@@ -418,8 +418,8 @@ function demander({ titre, texte = '', ok = 'Confirmer', annuler = 'Annuler', da
 function demanderCodeResponsable(titre, texte) {
   return new Promise(resolve => {
     ouvrirModale(`<h2>${esc(titre)}</h2><p>${texte}</p>
-      <label class="etiquette" for="code-resp">Code responsable (code d’accès Suivi caisse)</label>
-      <input id="code-resp" type="password" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX">
+      <label class="etiquette" for="code-resp">Code responsable</label>
+      <input id="code-resp" class="code-chiffres" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" placeholder="••••">
       <p class="txt-orange" id="code-erreur" hidden></p>
       <div class="boutons"><button class="secondaire" data-r="0">Annuler</button>
       <button class="danger" data-r="1" id="code-ok">Valider</button></div>`);
@@ -428,14 +428,15 @@ function demanderCodeResponsable(titre, texte) {
       const btn = e.target.closest('[data-r], [data-act="voile"]');
       if (!btn) return;
       if (btn.dataset.r !== '1') { modale.removeEventListener('click', f); fermerModale(); resolve(false); return; }
-      const code = ($('#code-resp').value || '').trim().toUpperCase();
+      const code = ($('#code-resp').value || '').replace(/\D/g, '');
       const err = $('#code-erreur');
       if (!code) return;
       btn.disabled = true; btn.textContent = 'Vérification…';
       try {
-        const r = await appelScript({ action: 'suivi', code }, 20000);
+        const cle = await db.get('cle');
+        const r = await appelScript({ action: 'verifierResponsable', cle, code }, 20000);
         if (r && r.ok) { modale.removeEventListener('click', f); fermerModale(); resolve(true); return; }
-        err.textContent = 'Code incorrect.';
+        err.textContent = r && r.erreur === 'bloque' ? 'Trop d’essais : réessayez dans 15 minutes.' : 'Code incorrect.';
       } catch (x) {
         err.textContent = 'Connexion nécessaire pour vérifier le code. Réessayez avec du wifi.';
       }
@@ -731,7 +732,7 @@ function vueReglages() {
     </section>
     <section class="bloc">
       <h2>Réservé aux responsables</h2>
-      <p class="aide">Efface tous les comptages de cet iPad (par exemple après des essais). Demande le code d’accès Suivi caisse. Le Google Sheet n’est pas modifié.</p>
+      <p class="aide">Efface tous les comptages de cet iPad (par exemple après des essais). Demande le code responsable (onglet Réglages du Google Sheet). Le Google Sheet n’est pas modifié.</p>
       <button class="danger" data-act="effacerTout">Effacer tout l’historique de l’iPad</button>
     </section>
     <p class="aide centre">Caisse Joséphine · version ${CONFIG.VERSION} · données enregistrées sur cet iPad et copiées uniquement dans le Google Sheet du café.</p>
