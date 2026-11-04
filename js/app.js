@@ -226,6 +226,8 @@ function blocTheorique(b, total) {
   if (sq.etat === 'chargement') ventesInfo = 'Lecture des ventes dans Square…';
   else if (sq.etat === 'ok') ventesInfo = `${it.nb} vente(s) en espèces dans Square`;
   else if (sq.erreur === 'square-non-configure' || sq.erreur === 'non-configure') ventesInfo = 'Square n’est pas encore connecté.';
+  else if (sq.erreur === 'cle' || sq.erreur === 'sans-cle') ventesInfo = 'Clé secrète absente ou refusée : Historique › Réglages et sauvegarde.';
+  else if (sq.etat === 'erreur' && /^square/.test(sq.erreur || '')) ventesInfo = 'Square a refusé la demande (jeton à reconnecter dans le Google Sheet).';
   else if (sq.etat === 'erreur') ventesInfo = 'Pas de connexion : l’écart sera calculé par le Google Sheet.';
   else ventesInfo = '';
   const mvts = it.mouvements.map((m, i) => `<div class="mvt"><span>${euros(m.montant, { signe: true })} · ${esc(m.motif || 'sans motif')}</span>
@@ -258,11 +260,12 @@ async function chargerVentes(force = false) {
   majTotaux();
   try {
     const cle = await db.get('cle');
+    if (!cle) throw new Error('sans-cle');
     const r = await appelScript({ action: 'ventesEspeces', cle, date: parisMaintenant().date }, 20000);
     if (r && r.ok) b.square = { etat: 'ok', ventes: r.ventes, remboursements: r.remboursements || 0, nb: r.nb || 0, ouverture: r.ouverture || null, t: Date.now() };
     else b.square = { etat: 'erreur', erreur: (r && r.erreur) || 'inconnue', ouverture: (r && r.ouverture) || null, t: Date.now() };
   } catch (e) {
-    b.square = { etat: 'erreur', erreur: e.message === 'non-configure' ? 'non-configure' : 'reseau', t: Date.now() };
+    b.square = { etat: 'erreur', erreur: ['non-configure', 'sans-cle'].includes(e.message) ? e.message : 'reseau', t: Date.now() };
   } finally { chargementVentes = false; }
   if (etat.brouillon === b) { sauverBrouillon(); majTotaux(); }
 }
