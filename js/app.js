@@ -763,8 +763,9 @@ function enregistrerServiceWorker() {
     document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
   }).catch(() => {});
   let recharge = false;
+  const avaitUneVersion = !!navigator.serviceWorker.controller; // pas de rechargement à la toute première visite
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (recharge) return; recharge = true;
+    if (recharge || !avaitUneVersion) return; recharge = true;
     sauverBrouillon(true);
     setTimeout(() => location.reload(), 150);
   });

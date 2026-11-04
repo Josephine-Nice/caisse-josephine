@@ -7,5 +7,5 @@
  */
 export const CONFIG = {
   SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzisc5TWf5gDwATvEf9QwGKWYdxc5jJfog3DkNcD9YKoN8EOk1CxPixbethedf55yJDbg/exec',
-  VERSION: '1.0.1',
+  VERSION: '1.0.2',
 };
