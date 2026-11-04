@@ -166,7 +166,7 @@ function vueComptage() {
       <div class="ligne-total detail-total"><span>Total des billets</span><b id="t-b"></b></div>
       <div class="ligne-total general"><span>Total général</span><b id="t-g"></b></div>
       ${ouv ? '<div class="controle" id="controle"></div>' : ''}
-      <button class="principal valider" data-act="${ouv ? 'valider' : 'versRepartition'}">${ouv ? 'Valider et enregistrer' : 'Suivant : répartition caisse / coffre ›'}</button>
+      <button class="principal valider" data-act="${ouv ? 'valider' : 'versRepartition'}">${ouv ? 'Valider et enregistrer' : 'Suivant : répartition ›'}</button>
     </aside>
   </div>`;
 }
@@ -249,12 +249,12 @@ function vueRepartition() {
     return `<tr class="${c ? 'au-coffre' : ''} ${depasse ? 'depasse' : ''}">
       <td class="val"><span class="vis-mini">${visuel(v)}</span>${libelle(v)}</td>
       <td class="num">${n}</td>
+      <td class="coffre">${c ? `<span class="pastille">${c} au coffre</span>${tags.length ? `<small>${tags.join(' · ')}</small>` : ''}` : '<span class="zero">—</span>'}</td>
       <td class="caisse"><div class="saisie petite">
         <button class="pm" data-act="gMoins" data-v="${v}" ${k <= 0 ? 'disabled' : ''} aria-label="Une de moins en caisse">−</button>
         <b>${k}</b>
         <button class="pm" data-act="gPlus" data-v="${v}" ${k >= n ? 'disabled' : ''} aria-label="Une de plus en caisse">+</button></div>
         ${depasse ? `<small class="txt-orange">plus de ${MAX_PIECES_PAR_VALEUR}</small>` : ''}</td>
-      <td class="coffre">${c ? `<span class="pastille">${c} au coffre</span>${tags.length ? `<small>${tags.join(' · ')}</small>` : ''}` : '<span class="zero">—</span>'}</td>
     </tr>`;
   }).join('');
 
@@ -266,9 +266,9 @@ function vueRepartition() {
   <main class="repartition">
     ${msgs.join('')}
     <table class="table-repart">
-      <thead><tr><th>Valeur</th><th class="num">Compté</th><th>Reste en caisse</th><th>Va au coffre</th></tr></thead>
+      <thead><tr><th>Valeur</th><th class="num">Compté</th><th>Va au coffre</th><th>Reste en caisse</th></tr></thead>
       <tbody>${lignes || '<tr><td colspan="4" class="vide">Aucune pièce ni aucun billet compté.</td></tr>'}</tbody>
-      <tfoot><tr><td>Total</td><td class="num">${euros(t.total)}</td><td><b>${euros(r.fond)}</b></td><td><b>${euros(r.enveloppe)}</b></td></tr></tfoot>
+      <tfoot><tr><td>Total</td><td class="num">${euros(t.total)}</td><td><b>${euros(r.enveloppe)}</b></td><td><b>${euros(r.fond)}</b></td></tr></tfoot>
     </table>
     <p class="aide">La répartition est calculée automatiquement : 100,00 € restent dans la caisse, en gardant les pièces (${MAX_PIECES_PAR_VALEUR} maximum par valeur) et les plus petits billets. Vous pouvez ajuster avec + et −.
     ${b.gardeAuto ? '' : '<button class="lien" data-act="recalculer">Revenir au calcul automatique</button>'}</p>
