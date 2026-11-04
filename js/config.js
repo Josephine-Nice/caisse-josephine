@@ -6,6 +6,6 @@
  * directement sur l'iPad (Historique › Réglages) et n'apparaît jamais ici.
  */
 export const CONFIG = {
-  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzisc5TWf5gDwATvEf9QwGKWYdxc5jJfog3DkNcD9YKoN8EOk1CxPixbethedf55yJDbg/exec',
-  VERSION: '1.0.2',
+  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyNosH5yVw5TNqq1ftVgLmxYEayiGjWm4bdoEsomNXnTRAy32aUqTbjiEn53bYjSjfe/exec',
+  VERSION: '1.0.3',
 };
