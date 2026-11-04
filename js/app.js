@@ -411,6 +411,40 @@ function demander({ titre, texte = '', ok = 'Confirmer', annuler = 'Annuler', da
   });
 }
 
+/**
+ * Suppression réservée aux responsables : demande le code d'accès « Suivi caisse »
+ * (onglet Réglages du Google Sheet), vérifié par le script Google. Renvoie true si le code est bon.
+ */
+function demanderCodeResponsable(titre, texte) {
+  return new Promise(resolve => {
+    ouvrirModale(`<h2>${esc(titre)}</h2><p>${texte}</p>
+      <label class="etiquette" for="code-resp">Code responsable (code d’accès Suivi caisse)</label>
+      <input id="code-resp" type="password" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX">
+      <p class="txt-orange" id="code-erreur" hidden></p>
+      <div class="boutons"><button class="secondaire" data-r="0">Annuler</button>
+      <button class="danger" data-r="1" id="code-ok">Valider</button></div>`);
+    setTimeout(() => { const i = $('#code-resp'); if (i) i.focus(); }, 50);
+    const f = async e => {
+      const btn = e.target.closest('[data-r], [data-act="voile"]');
+      if (!btn) return;
+      if (btn.dataset.r !== '1') { modale.removeEventListener('click', f); fermerModale(); resolve(false); return; }
+      const code = ($('#code-resp').value || '').trim().toUpperCase();
+      const err = $('#code-erreur');
+      if (!code) return;
+      btn.disabled = true; btn.textContent = 'Vérification…';
+      try {
+        const r = await appelScript({ action: 'suivi', code }, 20000);
+        if (r && r.ok) { modale.removeEventListener('click', f); fermerModale(); resolve(true); return; }
+        err.textContent = 'Code incorrect.';
+      } catch (x) {
+        err.textContent = 'Connexion nécessaire pour vérifier le code. Réessayez avec du wifi.';
+      }
+      err.hidden = false; btn.disabled = false; btn.textContent = 'Valider';
+    };
+    modale.addEventListener('click', f);
+  });
+}
+
 function ouvrirValidation() {
   const b = etat.brouillon;
   const t = totaux(b.quantites);
@@ -695,6 +729,11 @@ function vueReglages() {
       <h2>Prénoms enregistrés</h2>
       <div class="prenoms">${etat.prenoms.length ? etat.prenoms.map(p => `<span class="puce">${esc(p)} <button class="x" data-act="oublierPrenom" data-p="${esc(p)}" aria-label="Retirer ${esc(p)}">×</button></span>`).join('') : '<p class="aide">Aucun pour le moment.</p>'}</div>
     </section>
+    <section class="bloc">
+      <h2>Réservé aux responsables</h2>
+      <p class="aide">Efface tous les comptages de cet iPad (par exemple après des essais). Demande le code d’accès Suivi caisse. Le Google Sheet n’est pas modifié.</p>
+      <button class="danger" data-act="effacerTout">Effacer tout l’historique de l’iPad</button>
+    </section>
     <p class="aide centre">Caisse Joséphine · version ${CONFIG.VERSION} · données enregistrées sur cet iPad et copiées uniquement dans le Google Sheet du café.</p>
   </main>`;
 }
@@ -818,6 +857,7 @@ const actions = {
   detail: b => { etat.selection = etat.comptages.find(x => x.id === b.dataset.id); aller('detail'); },
   supprimer: async b => {
     const c = etat.comptages.find(x => x.id === b.dataset.id); if (!c) return;
+    if (!await demanderCodeResponsable('Suppression réservée', 'Seuls les responsables peuvent supprimer un comptage.')) return;
     const nonEnvoye = c.sync !== 'envoye';
     const ok = await demander({
       titre: 'Supprimer ce comptage de l’iPad ?',
@@ -865,6 +905,20 @@ const actions = {
     } finally { b.disabled = false; }
   },
   envoyer: async () => { await synchroniser(); majReglages(); },
+  effacerTout: async () => {
+    if (!await demanderCodeResponsable('Effacer tout l’historique de l’iPad', 'Seuls les responsables peuvent effacer l’historique.')) return;
+    const nonEnvoyes = etat.comptages.filter(c => c.sync !== 'envoye').length;
+    const ok = await demander({
+      titre: `Effacer les ${etat.comptages.length} comptage(s) de cet iPad ?`,
+      texte: (nonEnvoyes ? `<b>Attention : ${nonEnvoyes} comptage(s) ne sont pas encore envoyés au Google Sheet et seront définitivement perdus.</b> ` : '')
+        + 'Les comptages déjà envoyés restent dans le Google Sheet.',
+      ok: 'Tout effacer', danger: true,
+    });
+    if (!ok) return;
+    for (const c of etat.comptages) await db.supprimer(c.id);
+    etat.brouillon = null; await db.del('brouillon');
+    etat.comptages = await db.tous(); rendre(); majReglages();
+  },
   sauvegarder: () => {
     const p = parisMaintenant();
     const data = { app: 'caisse-josephine', version: CONFIG.VERSION, exporteLe: new Date().toISOString(), prenoms: etat.prenoms, comptages: etat.comptages };
