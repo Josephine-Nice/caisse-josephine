@@ -423,7 +423,7 @@ function vueFin() {
         <small>pour commencer la session de caisse, avant la première vente</small>
       </div>
       <div class="statut ${juste ? 'vert' : 'orange'}">${juste ? 'Caisse juste' : `Écart ${euros(c.ecart, { signe: true })} par rapport à 100,00 €`}</div>
-      <div class="boutons-fin"><button class="secondaire" data-act="pdf" data-id="${c.id}">Exporter en PDF</button>
+      <div class="boutons-fin">
       <button class="principal" data-act="terminer">Terminer</button></div>
     </main>`;
   }
@@ -449,7 +449,7 @@ function vueFin() {
         ${item('coffre', 'Enveloppe datée, montant noté, rangée dans le coffre')}
       </section>
     </div>
-    <div class="boutons-fin"><button class="secondaire" data-act="pdf" data-id="${c.id}">Exporter en PDF</button>
+    <div class="boutons-fin">
     <button class="principal" data-act="terminer">Terminer</button></div>
   </main>`;
 }
