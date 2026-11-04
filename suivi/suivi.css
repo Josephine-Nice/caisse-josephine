@@ -98,3 +98,9 @@ tfoot td { font-weight: 650; border-bottom: 0; }
   .tuile .t-montant { font-size: 18px; }
   .totaux b { font-size: 20px; }
 }
+.controle { background: var(--fond-2); border-radius: 14px; padding: 6px 12px; margin-bottom: 12px; }
+.ctl { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14.5px; }
+.ctl span { color: var(--gris); }
+.ctl.fort { border-top: 1px solid var(--ligne); font-weight: 700; }
+.ctl.orange b { color: var(--orange); } .ctl.vert b { color: var(--vert); }
+.ctl small { color: var(--gris-clair); font-weight: 400; }

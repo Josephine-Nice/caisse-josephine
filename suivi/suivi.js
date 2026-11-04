@@ -78,7 +78,10 @@ function decaler(iso, n) {
   return x.toISOString().slice(0, 10);
 }
 const estOuvert = (iso, r) => r.jours.includes(jourSemaine(iso)) && !r.fermetures.includes(iso);
-const ecartDe = c => c.type === 'ouverture' ? c.ecart : c.fond - FOND_DE_CAISSE;
+/** Écart affiché : ouverture = compté – 100 € ; clôture = compté – caisse théorique. */
+const ecartDe = c => c.type === 'ouverture' ? c.ecart : (typeof c.ecartTheorique === 'number' ? c.ecartTheorique : 0);
+/** Anomalie : écart, ou fond de caisse du soir différent de 100 €. */
+const anomalie = c => !!ecartDe(c) || (c.type === 'cloture' && c.fond !== FOND_DE_CAISSE);
 
 function parJour() {
   const m = new Map();
@@ -103,23 +106,24 @@ function tuile(type, liste, date, r, now) {
       <small>${!ouvert ? '' : enRetard ? 'Peut-être faite mais pas encore envoyée si l’iPad est hors connexion.' : `Vérification à ${heureLimite.replace(':', ' h ')}`}</small></div>`;
   }
   const e = ecartDe(c);
-  return `<button class="tuile ${e ? 'ecart' : 'ok'}" data-id="${esc(c.id)}"><span class="t-type">${nom}</span>
+  return `<button class="tuile ${anomalie(c) ? 'ecart' : 'ok'}" data-id="${esc(c.id)}"><span class="t-type">${nom}</span>
     <b>${c.heure.slice(0, 5)}${c.prenom ? ` · ${esc(c.prenom)}` : ''}</b>
     ${type === 'ouverture'
       ? `<span class="t-montant">${e ? `Écart ${euros(e, { signe: true })}` : 'Caisse juste'}</span><small>Compté ${euros(c.total)}</small>`
-      : `<span class="t-montant">Coffre ${euros(c.enveloppe)}</span><small>Compté ${euros(c.total)} · fond ${e ? `<em>${euros(c.fond)}</em>` : euros(c.fond)}</small>`}
+      : `<span class="t-montant">${typeof c.ecartTheorique !== 'number' ? 'Écart non calculé' : e ? `Écart ${euros(e, { signe: true })}` : 'Caisse juste'}</span>
+         <small>Coffre ${euros(c.enveloppe)} · fond ${c.fond !== FOND_DE_CAISSE ? `<em>${euros(c.fond)}</em>` : euros(c.fond)}</small>`}
     ${liste.filter(x => x.type === type).length > 1 ? '<small>plusieurs comptages ce jour</small>' : ''}
   </button>`;
 }
 
 function ligneJour(c) {
   const e = ecartDe(c);
-  return `<button class="ligne-c ${e ? 'ecart' : ''}" data-id="${esc(c.id)}">
+  return `<button class="ligne-c ${anomalie(c) ? 'ecart' : ''}" data-id="${esc(c.id)}">
     <span class="badge ${c.type === 'ouverture' ? 'ouv' : 'clo'}">${typeLibelle(c.type)}</span>
     <span class="h">${c.heure.slice(0, 5)}</span>
     <span class="p">${esc(c.prenom || '')}</span>
     <span class="m">${c.type === 'cloture' ? `coffre <b>${euros(c.enveloppe)}</b>` : euros(c.total)}</span>
-    <span class="e">${e ? (c.type === 'ouverture' ? `écart ${euros(e, { signe: true })}` : `fond ${euros(c.fond)}`) : '✓'}</span>
+    <span class="e">${e ? `écart ${euros(e, { signe: true })}` : (c.type === 'cloture' && c.fond !== FOND_DE_CAISSE ? `fond ${euros(c.fond)}` : '✓')}</span>
   </button>`;
 }
 
@@ -148,7 +152,7 @@ function rendre() {
     if (l.length || ouvert) {
       vus++;
       const oublis = ouvert ? ['ouverture', 'cloture'].filter(t => !l.some(c => c.type === t)) : [];
-      const ecarts = l.some(c => ecartDe(c));
+      const ecarts = l.some(c => anomalie(c));
       if (!filtreEcarts || ecarts || oublis.length) {
         cartes.push(`<section class="carte-jour ${ecarts || oublis.length ? 'alerte' : ''}">
           <h3>${esc(dateLongue(d, { annee: false }))}</h3>
@@ -179,6 +183,19 @@ function rendre() {
 }
 
 /* ---------- Détail d'un comptage ---------- */
+function controle(c) {
+  const l = (a, b, cls = '') => `<div class="ctl ${cls}"><span>${a}</span><b>${b}</b></div>`;
+  if (typeof c.theorique !== 'number') return `<div class="controle">${l('Fond de caisse laissé', euros(c.fond), c.fond !== FOND_DE_CAISSE ? 'orange' : '')}<p class="sous">Caisse théorique non calculée.</p></div>`;
+  return `<div class="controle">
+    ${l('Caisse du matin', euros(c.matin))}
+    ${l('Ventes en espèces', euros(c.ventesEspeces, { signe: true }) + (c.nbVentesEspeces ? ` <small>(${c.nbVentesEspeces})</small>` : ''))}
+    ${c.remboursementsEspeces ? l('Remboursements', euros(-c.remboursementsEspeces, { signe: true })) : ''}
+    ${(c.mouvements || []).map(m => l('· ' + esc(m.motif || 'mouvement'), euros(m.montant, { signe: true }))).join('')}
+    ${l('Caisse théorique', euros(c.theorique), 'fort')}
+    ${l('Écart de caisse', c.ecartTheorique ? euros(c.ecartTheorique, { signe: true }) : 'juste', c.ecartTheorique ? 'orange fort' : 'vert fort')}
+    ${l('Fond de caisse laissé', euros(c.fond), c.fond !== FOND_DE_CAISSE ? 'orange' : '')}
+  </div>`;
+}
 function detail(c) {
   const clo = c.type === 'cloture';
   const e = ecartDe(c);
@@ -191,9 +208,10 @@ function detail(c) {
     <p class="sous">${c.heure}${c.prenom ? ` · ${esc(c.prenom)}` : ''}</p>
     <div class="chiffres">
       <div><span>Total compté</span><b>${euros(c.total)}</b></div>
-      ${clo ? `<div><span>Fond laissé</span><b class="${e ? 'orange' : 'vert'}">${euros(c.fond)}</b></div><div><span>Coffre</span><b class="rouge">${euros(c.enveloppe)}</b></div>`
+      ${clo ? `<div><span>Écart</span><b class="${e ? 'orange' : 'vert'}">${typeof c.ecartTheorique !== 'number' ? '—' : e ? euros(e, { signe: true }) : 'juste'}</b></div><div><span>Coffre</span><b class="rouge">${euros(c.enveloppe)}</b></div>`
         : `<div><span>Attendu</span><b>${euros(c.attendu)}</b></div><div><span>Écart</span><b class="${e ? 'orange' : 'vert'}">${e ? euros(e, { signe: true }) : 'juste'}</b></div>`}
     </div>
+    ${clo ? controle(c) : ''}
     <table><thead><tr><th>Valeur</th><th class="n">Qté</th><th class="n">Sous-total</th>${clo ? '<th class="n">Caisse</th><th class="n">Coffre</th>' : ''}</tr></thead>
     <tbody>${lignes}</tbody>
     <tfoot><tr><td>Pièces</td><td></td><td class="n">${euros(c.totalPieces)}</td>${clo ? '<td></td><td></td>' : ''}</tr>

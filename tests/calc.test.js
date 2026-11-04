@@ -5,7 +5,8 @@
  */
 import {
   FOND_DE_CAISSE, MAX_PIECES_PAR_VALEUR, PIECES, BILLETS, COUPURES,
-  quantitesVides, totaux, ecart, repartir, resultat, raisonsCoffre, euros, libelle, dateLongue
+  quantitesVides, totaux, ecart, repartir, resultat, raisonsCoffre, euros, libelle, dateLongue,
+  centimesSaisis, sommeMouvements, caisseTheorique
 } from '../js/calc.js';
 
 const log = (typeof print === 'function') ? print : (...a) => console.log(...a);
@@ -183,6 +184,23 @@ test('Contrôle aléatoire contre la force brute (300 caisses)', () => {
       vrai(r.fond >= fb.fond, `caisse ${k} : fond ${r.fond} < ${fb.fond}`);
     }
   }
+});
+
+// ---------- Caisse théorique du soir ----------
+test('Montants saisis au clavier', () => {
+  egal(centimesSaisis('12,50'), 1250); egal(centimesSaisis('12.5'), 1250); egal(centimesSaisis('12'), 1200);
+  egal(centimesSaisis(' 0,05 € '), 5); egal(centimesSaisis('1 234,56'), 123456);
+  egal(centimesSaisis('abc'), null); egal(centimesSaisis('1,234'), null); egal(centimesSaisis(''), null); egal(centimesSaisis('-3'), null);
+});
+test('Caisse théorique = matin + ventes – remboursements ± mouvements', () => {
+  const mv = [{ montant: -1200, motif: 'lait' }, { montant: 500, motif: 'appoint' }];
+  egal(sommeMouvements(mv), -700);
+  egal(caisseTheorique({ matin: 10000, ventes: 23450, remboursements: 300, mouvements: mv }), 10000 + 23450 - 300 - 700);
+  egal(caisseTheorique({ matin: 10000, ventes: 0 }), 10000);
+});
+test('Écart de caisse du soir', () => {
+  const th = caisseTheorique({ matin: 10001, ventes: 15060, mouvements: [] });
+  egal(ecart(25061, th), 0); egal(ecart(24831, th), -230);
 });
 
 export function lancer() {

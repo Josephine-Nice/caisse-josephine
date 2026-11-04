@@ -22,7 +22,8 @@ const ONGLET_DETAIL = 'Détail';
 const ONGLET_REGLAGES = 'Réglages';
 
 const ENTETES_COMPTAGES = ['Identifiant', 'Date', 'Heure', 'Type', 'Prénom', 'Total compté', 'Montant attendu',
-  'Écart', 'Fond laissé', 'Mis au coffre', 'Observation', 'Fond exact', 'Reçu le', 'Données (ne pas modifier)'];
+  'Écart', 'Fond laissé', 'Mis au coffre', 'Observation', 'Fond exact', 'Reçu le', 'Données (ne pas modifier)',
+  'Caisse du matin', 'Ventes espèces', 'Mouvements divers', 'Caisse théorique'];
 const ENTETES_DETAIL = ['Identifiant', 'Date', 'Type', 'Valeur', 'Compté', 'Reste en caisse', 'Coffre', 'Sous-total compté'];
 
 const R = {
@@ -45,6 +46,7 @@ const R = {
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Caisse Joséphine')
     .addItem('Installer / réparer', 'installer')
+    .addItem('Connecter Square (ventes en espèces)', 'connecterSquare')
     .addItem('Envoyer un e-mail de test', 'envoyerEmailTest')
     .addItem('Vérifier les comptages maintenant', 'verifierComptages')
     .addToUi();
@@ -65,7 +67,9 @@ function installer() {
   c.getRange('F:G').setNumberFormat('#,##0.00 "€"');
   c.getRange('I:J').setNumberFormat('#,##0.00 "€"');
   c.getRange('H:H').setNumberFormat('+#,##0.00 "€";-#,##0.00 "€";0.00 "€"');
-  [150, 95, 75, 90, 110, 110, 110, 95, 100, 110, 300, 80, 150, 120].forEach((w, i) => c.setColumnWidth(i + 1, w));
+  c.getRange('O:R').setNumberFormat('#,##0.00 "€"');
+  c.getRange('Q:Q').setNumberFormat('+#,##0.00 "€";-#,##0.00 "€";0.00 "€"');
+  [150, 95, 75, 90, 110, 110, 110, 95, 100, 110, 300, 80, 150, 120, 115, 115, 125, 120].forEach((w, i) => c.setColumnWidth(i + 1, w));
   c.hideColumns(14);
   const regles = [
     SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=AND($H2<>"",$H2<>0)')
@@ -234,6 +238,13 @@ function doPost(e) {
   if (!r.cle || !egal_(String(corps.cle || '').toUpperCase().trim(), r.cle)) return json_({ ok: false, erreur: 'cle' });
   if (corps.action === 'test') return json_({ ok: true });
   if (corps.action === 'enregistrer') return json_(enregistrer_(corps.comptage, r));
+  if (corps.action === 'ventesEspeces') {
+    const iso = /^\d{4}-\d{2}-\d{2}$/.test(corps.date || '') ? corps.date : Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
+    let sq;
+    try { sq = squareEspeces_(iso, null); } catch (e) { sq = { ok: false, erreur: String(e.message || e).slice(0, 100) }; }
+    sq.ouverture = ouvertureDuJour_(iso);
+    return json_(sq);
+  }
   return json_({ ok: false, erreur: 'action' });
 }
 
@@ -270,6 +281,17 @@ function controler_(c) {
       fond += v * g; env += v * k;
     }
     if (fond !== c.fond || env !== c.enveloppe) return 'repartition';
+    if (c.theorique !== null && c.theorique !== undefined) {
+      if (!entier_(c.matin) || !entier_(c.ventesEspeces) || !entier_(c.remboursementsEspeces || 0)) return 'theorique';
+      if (!Array.isArray(c.mouvements)) return 'mouvements';
+      let mv = 0;
+      for (const m of c.mouvements) {
+        if (!m || !entier_(m.montant) || typeof m.motif !== 'string' || m.motif.length > 80) return 'mouvements';
+        mv += m.montant;
+      }
+      if (c.theorique !== c.matin + c.ventesEspeces - (c.remboursementsEspeces || 0) + mv) return 'theorique';
+      if (c.ecartTheorique !== total - c.theorique) return 'theorique';
+    }
   } else if (c.ecart !== total - FOND) return 'ecart';
   return '';
 }
@@ -286,12 +308,17 @@ function enregistrer_(c, r) {
       return { ok: true, doublon: true };      // déjà reçu : jamais deux fois
     }
     const ouv = c.type === 'ouverture';
-    const ecart = ouv ? c.ecart : c.fond - FOND;
+    if (!ouv && typeof c.theorique !== 'number') completerTheorique_(c);
+    const aTheo = !ouv && typeof c.theorique === 'number';
+    const ecart = ouv ? c.ecart : (aTheo ? c.ecartTheorique : '');
     const recu = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
     sh.appendRow([
       c.id, dateFr_(c.date), c.heure, ouv ? 'Ouverture' : 'Clôture', texte_(c.prenom),
-      c.total / 100, FOND / 100, ecart / 100, ouv ? '' : c.fond / 100, ouv ? '' : c.enveloppe / 100,
+      c.total / 100, ouv ? FOND / 100 : (aTheo ? c.theorique / 100 : ''), ecart === '' ? '' : ecart / 100,
+      ouv ? '' : c.fond / 100, ouv ? '' : c.enveloppe / 100,
       texte_(c.observation), ouv ? '' : (c.fond === FOND ? 'Oui' : 'Non'), recu, JSON.stringify(c),
+      aTheo ? c.matin / 100 : '', aTheo ? (c.ventesEspeces - (c.remboursementsEspeces || 0)) / 100 : '',
+      aTheo ? texte_(mouvementsTexte_(c.mouvements)) : '', aTheo ? c.theorique / 100 : '',
     ]);
     const d = feuille_(ONGLET_DETAIL, false);
     const lignes = COUPURES.map(v => [c.id, dateFr_(c.date), ouv ? 'Ouverture' : 'Clôture', libelle_(v),
@@ -310,7 +337,8 @@ function enregistrer_(c, r) {
 
 function alerteEcart_(c, r) {
   const ouv = c.type === 'ouverture';
-  const ecart = ouv ? c.ecart : c.fond - FOND;
+  if (!ouv) return alerteCloture_(c, r);
+  const ecart = c.ecart;
   if (!r.actives || !r.destinataires || Math.abs(ecart) < r.seuil) return;
   const props = PropertiesService.getScriptProperties();
   const cle = 'alerte_ecart_' + c.id;
@@ -330,6 +358,145 @@ function alerteEcart_(c, r) {
   lignes.push(['Observation', c.observation || '—']);
   envoyer_(r, sujet, (ouv ? 'Un écart a été constaté au comptage d’ouverture.' : 'Le fond de caisse laissé ce soir n’est pas de 100,00 €.'), lignes);
   props.setProperty(cle, new Date().toISOString());
+}
+
+/** Clôture : alerte si l'écart de caisse (compté – théorique) ou le fond de caisse n'est pas juste. */
+function alerteCloture_(c, r) {
+  const aTheo = typeof c.theorique === 'number';
+  const ecartCaisse = aTheo ? c.ecartTheorique : 0;
+  const ecartFond = c.fond - FOND;
+  const alerteCaisse = aTheo && Math.abs(ecartCaisse) >= r.seuil;
+  const alerteFond = Math.abs(ecartFond) >= r.seuil;
+  if (!r.actives || !r.destinataires || (!alerteCaisse && !alerteFond)) return;
+  const props = PropertiesService.getScriptProperties();
+  const cle = 'alerte_ecart_' + c.id;
+  if (props.getProperty(cle)) return;
+  const quand = 'clôture du ' + dateCourteFr_(c.date);
+  const sujet = alerteCaisse
+    ? 'Joséphine – Écart de caisse : ' + euros_(ecartCaisse, true) + ' (' + quand + ')'
+    : 'Joséphine – Fond de caisse : ' + euros_(c.fond) + ' au lieu de ' + euros_(FOND) + ' (' + quand + ')';
+  const lignes = [['Date', dateLongueFr_(c.date)], ['Heure', c.heure], ['Comptage', 'Clôture (soir)'], ['Prénom', c.prenom || '—']];
+  if (aTheo) {
+    lignes.push(['Caisse du matin', euros_(c.matin)]);
+    lignes.push(['Ventes en espèces (Square)', euros_(c.ventesEspeces) + (c.nbVentesEspeces ? ' (' + c.nbVentesEspeces + ' vente(s))' : '')]);
+    if (c.remboursementsEspeces) lignes.push(['Remboursements en espèces', euros_(-c.remboursementsEspeces)]);
+    if (c.mouvements && c.mouvements.length) lignes.push(['Mouvements divers', mouvementsTexte_(c.mouvements)]);
+    lignes.push(['Caisse théorique', euros_(c.theorique)]);
+    lignes.push(['Caisse comptée', euros_(c.total)]);
+    lignes.push(['Écart de caisse', euros_(ecartCaisse, true)]);
+  } else {
+    lignes.push(['Caisse comptée', euros_(c.total)]);
+    lignes.push(['Écart de caisse', 'non calculé (ventes Square indisponibles)']);
+  }
+  lignes.push(['Fond de caisse laissé', euros_(c.fond) + (alerteFond ? ' (au lieu de ' + euros_(FOND) + ')' : '')]);
+  lignes.push(['Enveloppe mise au coffre', euros_(c.enveloppe)]);
+  lignes.push(['Observation', c.observation || '—']);
+  const intro = alerteCaisse ? 'Un écart de caisse a été constaté à la clôture.' : 'Le fond de caisse laissé ce soir n’est pas de 100,00 €.';
+  envoyer_(r, sujet, intro, lignes);
+  props.setProperty(cle, new Date().toISOString());
+}
+
+function mouvementsTexte_(mv) {
+  return (mv || []).map(m => euros_(m.montant, true) + (m.motif ? ' ' + m.motif : '')).join(' ; ');
+}
+
+/* ================================================================== */
+/* Square : ventes en espèces du jour                                   */
+/* ================================================================== */
+
+const SQUARE_VERSION = '2024-07-17';
+
+function squareGet_(chemin, jeton) {
+  const rep = UrlFetchApp.fetch('https://connect.squareup.com' + chemin, {
+    method: 'get', muteHttpExceptions: true,
+    headers: { Authorization: 'Bearer ' + jeton, 'Square-Version': SQUARE_VERSION, Accept: 'application/json' },
+  });
+  let d = {};
+  try { d = JSON.parse(rep.getContentText()); } catch (e) { /* */ }
+  if (rep.getResponseCode() !== 200) {
+    throw new Error('square-' + rep.getResponseCode() + (d.errors && d.errors[0] ? '-' + d.errors[0].code : ''));
+  }
+  return d;
+}
+
+/** "2026-11-04" -> "2026-11-04T00:00:00+01:00" (minuit, heure de Paris). */
+function debutJourParis_(iso) {
+  const p = iso.split('-').map(Number);
+  return iso + 'T00:00:00' + Utilities.formatDate(new Date(Date.UTC(p[0], p[1] - 1, p[2], 12)), TZ, 'XXX');
+}
+
+/** Total des paiements et remboursements en espèces du jour (centimes), de minuit à « fin » (ou maintenant). */
+function squareEspeces_(iso, fin) {
+  const props = PropertiesService.getScriptProperties();
+  const jeton = props.getProperty('SQUARE_JETON');
+  if (!jeton) return { ok: false, erreur: 'square-non-configure' };
+  const lieu = props.getProperty('SQUARE_LIEU') || '';
+  const debut = encodeURIComponent(debutJourParis_(iso));
+  const finTxt = encodeURIComponent(Utilities.formatDate(fin || new Date(), 'UTC', "yyyy-MM-dd'T'HH:mm:ss'Z'"));
+  const base = '?begin_time=' + debut + '&end_time=' + finTxt + (lieu ? '&location_id=' + encodeURIComponent(lieu) : '');
+  let ventes = 0, nb = 0, remb = 0, curseur = '';
+  do {
+    const d = squareGet_('/v2/payments' + base + '&limit=100' + (curseur ? '&cursor=' + encodeURIComponent(curseur) : ''), jeton);
+    (d.payments || []).forEach(p => {
+      if (p.source_type === 'CASH' && p.status === 'COMPLETED') { ventes += (p.total_money || p.amount_money).amount; nb++; }
+    });
+    curseur = d.cursor || '';
+  } while (curseur);
+  do {
+    const d = squareGet_('/v2/refunds' + base + '&source_type=CASH&limit=100' + (curseur ? '&cursor=' + encodeURIComponent(curseur) : ''), jeton);
+    (d.refunds || []).forEach(x => { if (x.status === 'COMPLETED') remb += x.amount_money.amount; });
+    curseur = d.cursor || '';
+  } while (curseur);
+  return { ok: true, ventes: ventes, nb: nb, remboursements: remb, lieu: props.getProperty('SQUARE_NOM') || '' };
+}
+
+/** Dernière ouverture reçue pour ce jour : { total, heure } ou null. */
+function ouvertureDuJour_(iso) {
+  const sh = feuille_(ONGLET_COMPTAGES, false);
+  if (!sh || sh.getLastRow() < 2) return null;
+  const debut = Math.max(2, sh.getLastRow() - 200);
+  const v = sh.getRange(debut, 14, sh.getLastRow() - debut + 1, 1).getValues();
+  for (let i = v.length - 1; i >= 0; i--) {
+    try { const c = JSON.parse(v[i][0]); if (c.type === 'ouverture' && c.date === iso) return { total: c.total, heure: c.heure }; } catch (e) { /* */ }
+  }
+  return null;
+}
+
+/** Si l'iPad n'a pas pu joindre Square (pas de wifi), le script calcule lui-même la caisse théorique. */
+function completerTheorique_(c) {
+  try {
+    const fin = c.horodatage ? new Date(c.horodatage) : null;
+    const sq = squareEspeces_(c.date, fin);
+    if (!sq.ok) return;
+    if (!entier_(c.matin)) { const o = ouvertureDuJour_(c.date); c.matin = o ? o.total : FOND; c.matinSource = o ? 'sheet' : 'defaut'; }
+    if (!Array.isArray(c.mouvements)) c.mouvements = [];
+    c.ventesEspeces = sq.ventes; c.nbVentesEspeces = sq.nb; c.remboursementsEspeces = sq.remboursements;
+    c.theorique = c.matin + sq.ventes - sq.remboursements + c.mouvements.reduce((a, m) => a + m.montant, 0);
+    c.ecartTheorique = c.total - c.theorique;
+    c.theoriqueParLeScript = true;
+  } catch (e) { console.error(e); }
+}
+
+/** Menu « Connecter Square » : enregistre le jeton d'accès (jamais visible dans le Sheet). */
+function connecterSquare() {
+  const ui = SpreadsheetApp.getUi();
+  const rep = ui.prompt('Connecter Square', 'Collez le jeton d’accès Square (« Production access token ») :', ui.ButtonSet.OK_CANCEL);
+  if (rep.getSelectedButton() !== ui.Button.OK) return;
+  const jeton = rep.getResponseText().trim();
+  let lieux;
+  try { lieux = (squareGet_('/v2/locations', jeton).locations || []).filter(l => l.status === 'ACTIVE'); }
+  catch (e) { ui.alert('Square a refusé ce jeton (' + e.message + '). Vérifiez qu’il s’agit bien du jeton « Production ».'); return; }
+  if (!lieux.length) { ui.alert('Aucun établissement actif trouvé sur ce compte Square.'); return; }
+  let lieu = lieux[0];
+  if (lieux.length > 1) {
+    const r2 = ui.prompt('Établissement Square', 'Quel établissement ?\n' + lieux.map((l, i) => (i + 1) + '. ' + l.name).join('\n') + '\n\nTapez le numéro :', ui.ButtonSet.OK_CANCEL);
+    if (r2.getSelectedButton() !== ui.Button.OK) return;
+    lieu = lieux[Math.max(0, Math.min(lieux.length - 1, Number(r2.getResponseText()) - 1))] || lieux[0];
+  }
+  const props = PropertiesService.getScriptProperties();
+  props.setProperties({ SQUARE_JETON: jeton, SQUARE_LIEU: lieu.id, SQUARE_NOM: lieu.name || '' });
+  const t = squareEspeces_(Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), null);
+  ui.alert('Square est connecté (' + (lieu.name || lieu.id) + ').\n\nVentes en espèces aujourd’hui : ' + euros_(t.ventes) + ' (' + t.nb + ' vente(s)).');
 }
 
 function verifierComptages() {

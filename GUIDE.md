@@ -56,6 +56,23 @@ Seules les cases jaunes sont à vérifier :
 
 La vérification automatique des oublis tourne toute seule toutes les 5 minutes : l'e-mail « Aucun comptage d'ouverture reçu ce matin » part donc entre 9 h 45 et 9 h 50, une seule fois par jour.
 
+### Connecter Square (caisse théorique du soir)
+
+À la clôture, l'application calcule elle-même la **caisse théorique** :
+caisse du matin + ventes en espèces du jour (lues dans Square) – remboursements en espèces ± mouvements divers.
+L'**écart** = caisse comptée – caisse théorique ; une alerte part à Nathalie s'il n'est pas nul.
+Plus besoin d'ouvrir ni de clôturer la session de caisse dans Square.
+
+1. Allez sur **https://developer.squareup.com**, connectez-vous avec le compte Square du café.
+2. Cliquez sur **+** (ou « Create an application »), nommez-la `Caisse Joséphine`, validez.
+3. Ouvrez l'application créée › **Credentials**, choisissez **Production** en haut de la page.
+4. Dans **Production Access token**, cliquez sur **Show** puis copiez le jeton (il commence par `EAAA`).
+5. Dans le Google Sheet, menu **Caisse Joséphine › Connecter Square (ventes en espèces)**, collez le jeton, **OK**.
+   (La première fois, Google demande une autorisation supplémentaire pour « se connecter à un service externe » : acceptez.)
+6. Un message confirme la connexion et affiche les ventes en espèces du jour.
+
+Le jeton est gardé dans le script Google (jamais dans le Sheet, sur l'iPad ou sur GitHub). Ne le communiquez à personne. Pour le changer, relancez simplement *Connecter Square*.
+
 ---
 
 ## Étape 2 — Mettre l'application en ligne (GitHub Pages, gratuit)
@@ -157,9 +174,11 @@ Nathalie reçoit aussi les **e-mails d'alerte** (écart dès 1 centime, ouvertur
 
 ## Au quotidien
 
-**Le matin (9 h 15)** : Ouverture – matin › saisir les pièces et billets › « Caisse juste » s'affiche en vert (sinon : recompter une fois, puis enregistrer le vrai montant avec une observation) › Valider et enregistrer › commencer la session de caisse sur Square.
+**Le matin (9 h 15)** : Ouverture – matin › saisir les pièces et billets › « Caisse juste » s'affiche en vert (sinon : recompter une fois, puis enregistrer le vrai montant avec une observation) › Valider et enregistrer. Rien à faire dans Square.
 
-**Le soir** : Clôture – soir › compter toute la caisse › Suivant : répartition › l'application indique ce qui reste dans la caisse (100,00 €) et ce qui va au coffre › Valider et enregistrer › saisir le **montant affiché dans Square** pour clôturer la session › écrire **la date et le montant** sur l'enveloppe › ranger l'enveloppe dans le coffre.
+**Dans la journée** : si de l'argent sort de la caisse ou y entre en dehors d'une vente (achat payé en espèces, appoint…), le noter pour le saisir le soir comme « mouvement divers ».
+
+**Le soir** : Clôture – soir › compter toute la caisse › le panneau de droite affiche la caisse théorique et l'écart (ajouter les mouvements divers avec « + Ajouter un mouvement ») › Suivant : répartition › l'application indique ce qui reste dans la caisse (100,00 €) et ce qui va au coffre › Valider et enregistrer › écrire **la date et le montant** sur l'enveloppe › ranger l'enveloppe dans le coffre › cocher les 2 cases › Terminer.
 
 ## En cas de problème
 
@@ -168,6 +187,8 @@ Nathalie reçoit aussi les **e-mails d'alerte** (écart dès 1 centime, ouvertur
 | « en attente d'envoi » reste affiché | Normal sans wifi : l'envoi repartira tout seul. Sinon, Réglages et sauvegarde › Tester la connexion. |
 | « Clé refusée » | Vérifiez la clé secrète (onglet Réglages du Sheet) et saisissez-la à nouveau sur l'iPad. |
 | Aucun e-mail d'alerte | Vérifiez les courriers indésirables, la case « Destinataires » et « Alertes activées : Oui ». Lancez *Caisse Joséphine › Envoyer un e-mail de test*. |
+| « Square n'est pas encore connecté » | Faites *Caisse Joséphine › Connecter Square* dans le Google Sheet (étape 1). |
+| « Pas de connexion » pour les ventes | La clôture peut quand même être enregistrée : le Google Sheet calculera la caisse théorique à la réception. |
 | Fermeture pour congés | Ajoutez les dates dans Réglages (ou mettez « Alertes activées : Non » pendant la période). |
 | La page Suivi demande le code | Saisissez le Code d'accès Suivi caisse (onglet Réglages). |
 | L'iPad n'affiche pas la nouvelle version | Fermez complètement l'application (balayer vers le haut) et rouvrez-la avec du wifi. |

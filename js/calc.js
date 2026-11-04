@@ -219,6 +219,31 @@ export function raisonsCoffre(compte, garde, limite = MAX_PIECES_PAR_VALEUR) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Caisse théorique du soir                                            */
+/* ------------------------------------------------------------------ */
+
+/** Montant saisi au clavier ("12,50", "12.5", "12") -> centimes ; invalide -> null. */
+export function centimesSaisis(txt) {
+  const s = String(txt ?? '').trim().replace(/[\s€]/g, '').replace(',', '.');
+  if (!/^\d{1,6}(\.\d{0,2})?$/.test(s)) return null;
+  const [e, d = ''] = s.split('.');
+  return Number(e) * 100 + Number((d + '00').slice(0, 2));
+}
+
+/** Somme des mouvements divers (montants signés : + entrée, – sortie). */
+export function sommeMouvements(mouvements = []) {
+  return mouvements.reduce((a, m) => a + (Number.isInteger(m.montant) ? m.montant : 0), 0);
+}
+
+/**
+ * Caisse théorique = caisse du matin + ventes espèces – remboursements espèces
+ * ± mouvements divers. Tout en centimes.
+ */
+export function caisseTheorique({ matin, ventes, remboursements = 0, mouvements = [] }) {
+  return matin + ventes - remboursements + sommeMouvements(mouvements);
+}
+
+/* ------------------------------------------------------------------ */
 /* Formats                                                             */
 /* ------------------------------------------------------------------ */
 

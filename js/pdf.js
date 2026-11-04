@@ -167,7 +167,7 @@ export function pdfComptage(c) {
       return l;
     }), { gras: [12, 13], fond: [12, 13], x0: 111, rowH: 7, couleurs: { ...couleursD, '12,1': c.fondExact ? VERT : ORANGE, '13,2': ROUGE } });
     y = y1 + 4;
-    y = encadre(doc, y, 'TOTAL GÉNÉRAL DE LA CAISSE (à saisir dans Square)', m(c.total), { h: 13, taille: 15 });
+    y = encadre(doc, y, 'TOTAL GÉNÉRAL DE LA CAISSE (comptée)', m(c.total), { h: 13, taille: 15 });
     y += 3;
     y = encadre(doc, y, `FOND DE CAISSE LAISSÉ (attendu ${m(FOND_DE_CAISSE)})`, m(c.fond),
       { h: 13, taille: 15, couleurValeur: c.fondExact ? VERT : ORANGE });
@@ -177,6 +177,32 @@ export function pdfComptage(c) {
     doc.text("MONTANT DE L'ENVELOPPE MISE AU COFFRE", 20, y + 10.5);
     doc.setFontSize(20); doc.text(m(c.enveloppe), 190, y + 11.8, { align: 'right' });
     y += 18;
+    // Contrôle de caisse : caisse théorique et écart
+    y += 4;
+    doc.setDrawColor(...LIGNE); doc.roundedRect(15, y, 180, 17, 2, 2, 'S');
+    const aTheo = typeof c.theorique === 'number';
+    const cases = aTheo ? [
+      ['Caisse du matin', m(c.matin), ENCRE],
+      ['Ventes espèces', m(c.ventesEspeces - (c.remboursementsEspeces || 0), { signe: true }), ENCRE],
+      ['Mouvements', m((c.mouvements || []).reduce((a, x) => a + x.montant, 0), { signe: true }), ENCRE],
+      ['Caisse théorique', m(c.theorique), ENCRE],
+      ['Écart de caisse', c.ecartTheorique ? m(c.ecartTheorique, { signe: true }) : 'juste', c.ecartTheorique ? ORANGE : VERT],
+    ] : [['Écart de caisse', 'non calculé (ventes Square indisponibles)', GRIS]];
+    const lw = 180 / cases.length;
+    cases.forEach(([l, v, col], i) => {
+      const x = 15 + i * lw + 4;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.8); couleur(doc, GRIS);
+      doc.text(l.toUpperCase(), x, y + 5.5);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11.5); couleur(doc, col);
+      doc.text(v, x, y + 12.5);
+    });
+    y += 17;
+    if (aTheo && c.mouvements && c.mouvements.length) {
+      y += 5;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.8); couleur(doc, GRIS);
+      doc.text(doc.splitTextToSize('Mouvements divers : ' + c.mouvements.map(x => m(x.montant, { signe: true }) + (x.motif ? ' ' + x.motif : '')).join(' ; '), 180).slice(0, 2), 15, y);
+      y += 3;
+    }
     if (!c.fondExact) {
       y += 6;
       doc.setFont('helvetica', 'bold'); doc.setFontSize(10); couleur(doc, ORANGE);
@@ -202,7 +228,7 @@ export function pdfRecap(liste, debut, fin) {
   ];
   let totalCoffre = 0, nbEcarts = 0;
   const lignes = tri.map(c => {
-    const e = c.type === 'ouverture' ? c.ecart : c.fond - FOND_DE_CAISSE;
+    const e = c.type === 'ouverture' ? c.ecart : (typeof c.ecartTheorique === 'number' ? c.ecartTheorique : 0);
     if (e) nbEcarts++;
     if (c.type === 'cloture') totalCoffre += c.enveloppe;
     return {
@@ -226,7 +252,7 @@ export function pdfRecap(liste, debut, fin) {
   if (y > 250) { doc.addPage(); y = entete(doc, titre, st); }
   y += 6;
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); couleur(doc, GRIS);
-  doc.text(`${tri.length} comptage(s) · ${nbEcarts} écart(s) · pour une clôture, l'écart indiqué est celui du fond de caisse par rapport à ${m(FOND_DE_CAISSE)}.`, 15, y);
+  doc.text(`${tri.length} comptage(s) · ${nbEcarts} écart(s) · pour une clôture, l'écart est la différence entre la caisse comptée et la caisse théorique.`, 15, y);
   y += 5;
   doc.setFillColor(...ROUGE); doc.roundedRect(15, y, 180, 18, 2, 2, 'F');
   doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(255, 255, 255);

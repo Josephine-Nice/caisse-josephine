@@ -434,3 +434,32 @@ code { background: var(--fond-2); padding: 1px 6px; border-radius: 6px; font-siz
   .repart-grille .panneau .ligne-total.general { flex-direction: row; align-items: baseline; }
   .repart-grille .panneau .ligne-total.fond-ligne b { font-size: 22px; }
 }
+
+/* ---------- Caisse théorique ---------- */
+.panneau .sous-ligne { display: block; color: var(--gris-clair); font-size: 12.5px; margin: -6px 0 2px; }
+.lien.mini { font-size: 13.5px; min-height: 32px; padding: 2px 0; }
+.lien.ajout { align-self: flex-start; }
+.mvt { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--gris); padding-left: 8px; }
+.mvt .x { border: 0; background: none; font-size: 20px; color: var(--gris); min-width: 36px; min-height: 32px; }
+.ligne-total.theo { border-top: 1px solid var(--ligne); margin-top: 4px; }
+.ligne-total.theo b { font-size: 22px; font-weight: 800; }
+.panneau #theorique { flex: none; border-top: 1px solid var(--ligne); padding-top: 8px; margin-top: 8px; display: flex; flex-direction: column; }
+.panneau #theorique .ligne-total { padding: 4px 0; }
+.panneau #theorique .ligne-total b { font-size: 18px; }
+.segment.sens { margin: 6px 0 4px; }
+.segment.sens button { flex: 1; min-height: 46px; }
+.segment.sens button.actif { color: var(--rouge); }
+.bloc.square.ecart-vert b { color: var(--vert); }
+.bloc.square.ecart-orange b { color: var(--orange); }
+.bloc.square small { color: var(--gris); font-size: 15px; }
+.controle-detail { background: var(--fond-2); border-radius: 16px; padding: 10px 18px; margin-bottom: 18px; }
+.controle-detail .ligne-total { padding: 6px 0; }
+.controle-detail .ligne-total.sous span { padding-left: 14px; font-weight: 500; font-size: 14.5px; }
+.controle-detail .ligne-total.sous b { font-size: 15px; font-weight: 500; color: var(--gris); }
+.controle-detail .ligne-total.fort { border-top: 1px solid var(--ligne); }
+.controle-detail .ligne-total.fort b { font-weight: 800; }
+.repart-grille .ecart-ligne { border-top: 1px solid var(--ligne); margin-top: 6px; }
+@media (max-width: 760px) {
+  .panneau #theorique > *:not(.theo):not(.ecart-l) { display: none; }
+  .panneau #theorique { padding-top: 2px; margin-top: 2px; }
+}
