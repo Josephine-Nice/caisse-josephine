@@ -343,7 +343,10 @@ function vueRepartition() {
     return `<tr class="${c ? 'au-coffre' : ''} ${depasse ? 'depasse' : ''}">
       <td class="val"><span class="vis-mini">${visuel(v)}</span>${libelle(v)}</td>
       <td class="num">${n}</td>
-      <td class="coffre">${c ? `<span class="pastille">${c} au coffre</span>${tags.length ? `<small>${tags.join(' · ')}</small>` : ''}` : '<span class="zero">—</span>'}</td>
+      <td class="coffre"><div class="saisie petite">
+        <button class="pm" data-act="gPlus" data-v="${v}" ${c <= 0 ? 'disabled' : ''} aria-label="Une de moins au coffre">−</button>
+        <b class="${c ? 'txt-rouge' : ''}">${c}</b>
+        <button class="pm" data-act="gMoins" data-v="${v}" ${k <= 0 ? 'disabled' : ''} aria-label="Une de plus au coffre">+</button></div></td>
       <td class="caisse"><div class="saisie petite">
         <button class="pm" data-act="gMoins" data-v="${v}" ${k <= 0 ? 'disabled' : ''} aria-label="Une de moins en caisse">−</button>
         <b>${k}</b>
