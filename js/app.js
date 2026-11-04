@@ -425,6 +425,7 @@ function vueFin() {
     </main>`;
   }
   const ch = etat.checklist[c.id] || {};
+  const toutCoche = ['square', 'fond', 'coffre'].every(k => ch[k]);
   const item = (k, txt) => `<label class="case"><input type="checkbox" data-act="cocher" data-k="${k}" ${ch[k] ? 'checked' : ''}><span>${txt}</span></label>`;
   return entete() + `<main class="fin cloture">
     <h1>Clôture enregistrée</h1>
@@ -447,7 +448,8 @@ function vueFin() {
       </section>
     </div>
     <div class="boutons-fin">
-    <button class="principal" data-act="terminer">Terminer</button></div>
+    <button class="principal" data-act="terminer" id="btn-terminer" ${toutCoche ? '' : 'disabled'}>Terminer</button></div>
+    <p class="aide centre" id="aide-terminer" ${toutCoche ? 'hidden' : ''}>Cochez les 3 cases pour terminer.</p>
   </main>`;
 }
 
@@ -664,7 +666,13 @@ const actions = {
   voile: () => fermerModale(),
   enregistrer: () => enregistrer(),
   terminer: () => { etat.selection = null; aller('accueil'); },
-  cocher: b => { const id = etat.selection.id; etat.checklist[id] = { ...(etat.checklist[id] || {}), [b.dataset.k]: b.checked }; },
+  cocher: b => {
+    const id = etat.selection.id;
+    const ch = etat.checklist[id] = { ...(etat.checklist[id] || {}), [b.dataset.k]: b.checked };
+    const ok = ['square', 'fond', 'coffre'].every(k => ch[k]);
+    const btn = $('#btn-terminer'); if (btn) btn.disabled = !ok;
+    const aide = $('#aide-terminer'); if (aide) aide.hidden = ok;
+  },
   pdf: b => {
     const c = etat.comptages.find(x => x.id === b.dataset.id) || etat.selection;
     partagerFichier(pdfComptage(c), nomFichier(c));
