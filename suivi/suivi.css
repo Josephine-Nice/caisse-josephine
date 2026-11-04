@@ -104,3 +104,10 @@ tfoot td { font-weight: 650; border-bottom: 0; }
 .ctl.fort { border-top: 1px solid var(--ligne); font-weight: 700; }
 .ctl.orange b { color: var(--orange); } .ctl.vert b { color: var(--vert); }
 .ctl small { color: var(--gris-clair); font-weight: 400; }
+
+/* Écarts de caisse en rouge (les oublis restent en orange) */
+.tuile.ecart { background: var(--rouge-pale); border-color: #F2B8B5; }
+.tuile.ecart .t-montant, .tuile.ecart em { color: var(--rouge); }
+.ligne-c.ecart .e { color: var(--rouge); }
+.carte-jour.alerte:has(.ligne-c.ecart) { border-color: #F2B8B5; }
+.chiffres .orange, .ctl.orange b { color: var(--rouge); }
