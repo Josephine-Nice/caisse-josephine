@@ -200,7 +200,7 @@ export function pdfComptage(c) {
     if (aTheo && c.mouvements && c.mouvements.length) {
       y += 5;
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8.8); couleur(doc, GRIS);
-      doc.text(doc.splitTextToSize('Mouvements divers : ' + c.mouvements.map(x => m(x.montant, { signe: true }) + (x.motif ? ' ' + x.motif : '')).join(' ; '), 180).slice(0, 2), 15, y);
+      doc.text(doc.splitTextToSize('Mouvements exceptionnels : ' + c.mouvements.map(x => m(x.montant, { signe: true }) + (x.motif ? ' ' + x.motif : '')).join(' ; '), 180).slice(0, 2), 15, y);
       y += 3;
     }
     if (!c.fondExact) {

@@ -294,6 +294,8 @@ function controler_(c) {
       fond += v * g; env += v * k;
     }
     if (fond !== c.fond || env !== c.enveloppe) return 'repartition';
+    if (c.mouvements !== undefined && (!Array.isArray(c.mouvements) || c.mouvements.length > 10 ||
+        c.mouvements.some(m => !m || !entier_(m.montant) || typeof m.motif !== 'string' || m.motif.length > 80))) return 'mouvements';
     if (c.theorique !== null && c.theorique !== undefined) {
       if (!entier_(c.matin) || !entier_(c.ventesEspeces) || !entier_(c.remboursementsEspeces || 0)) return 'theorique';
       if (!Array.isArray(c.mouvements)) return 'mouvements';
@@ -331,7 +333,7 @@ function enregistrer_(c, r) {
       ouv ? '' : c.fond / 100, ouv ? '' : c.enveloppe / 100,
       texte_(c.observation), ouv ? '' : (c.fond === FOND ? 'Oui' : 'Non'), recu, JSON.stringify(c),
       aTheo ? c.matin / 100 : '', aTheo ? (c.ventesEspeces - (c.remboursementsEspeces || 0)) / 100 : '',
-      aTheo ? texte_(mouvementsTexte_(c.mouvements)) : '', aTheo ? c.theorique / 100 : '',
+      ouv ? '' : texte_(mouvementsTexte_(c.mouvements)), aTheo ? c.theorique / 100 : '',
     ]);
     const d = feuille_(ONGLET_DETAIL, false);
     const lignes = COUPURES.map(v => [c.id, dateFr_(c.date), ouv ? 'Ouverture' : 'Clôture', libelle_(v),
@@ -380,37 +382,45 @@ function alerteCloture_(c, r) {
   const ecartFond = c.fond - FOND;
   const alerteCaisse = aTheo && Math.abs(ecartCaisse) >= r.seuil;
   const alerteFond = Math.abs(ecartFond) >= r.seuil;
-  if (!r.actives || !r.destinataires || (!alerteCaisse && !alerteFond)) return;
+  const mv = Array.isArray(c.mouvements) ? c.mouvements : [];
+  const alerteMvt = mv.length > 0;               // mouvement exceptionnel : toujours signalé, même caisse juste
+  if (!r.actives || !r.destinataires || (!alerteCaisse && !alerteFond && !alerteMvt)) return;
   const props = PropertiesService.getScriptProperties();
   const cle = 'alerte_ecart_' + c.id;
   if (props.getProperty(cle)) return;
   const quand = 'clôture du ' + dateCourteFr_(c.date);
+  const totalMvt = mv.reduce((a, m) => a + m.montant, 0);
   const sujet = alerteCaisse
-    ? 'Joséphine – Écart de caisse : ' + euros_(ecartCaisse, true) + ' (' + quand + ')'
-    : 'Joséphine – Fond de caisse : ' + euros_(c.fond) + ' au lieu de ' + euros_(FOND) + ' (' + quand + ')';
+    ? 'Joséphine – Écart de caisse : ' + euros_(ecartCaisse, true) + (alerteMvt ? ' + mouvement exceptionnel' : '') + ' (' + quand + ')'
+    : alerteFond
+    ? 'Joséphine – Fond de caisse : ' + euros_(c.fond) + ' au lieu de ' + euros_(FOND) + ' (' + quand + ')'
+    : 'Joséphine – Mouvement exceptionnel : ' + euros_(totalMvt, true) + ' (' + quand + ')';
   const lignes = [['Date', dateLongueFr_(c.date)], ['Heure', c.heure], ['Comptage', 'Clôture (soir)'], ['Prénom', c.prenom || '—']];
   if (aTheo) {
     lignes.push(['Caisse du matin', euros_(c.matin)]);
     lignes.push(['Ventes en espèces (Square)', euros_(c.ventesEspeces) + (c.nbVentesEspeces ? ' (' + c.nbVentesEspeces + ' vente(s))' : '')]);
     if (c.remboursementsEspeces) lignes.push(['Remboursements en espèces', euros_(-c.remboursementsEspeces)]);
-    if (c.mouvements && c.mouvements.length) lignes.push(['Mouvements divers', mouvementsTexte_(c.mouvements)]);
+    if (alerteMvt) lignes.push(['Mouvement exceptionnel', mouvementsTexte_(mv, '\n')]);
     lignes.push(['Caisse théorique', euros_(c.theorique)]);
     lignes.push(['Caisse comptée', euros_(c.total)]);
     lignes.push(['Écart de caisse', euros_(ecartCaisse, true)]);
   } else {
+    if (alerteMvt) lignes.push(['Mouvement exceptionnel', mouvementsTexte_(mv, '\n')]);
     lignes.push(['Caisse comptée', euros_(c.total)]);
     lignes.push(['Écart de caisse', 'non calculé (ventes Square indisponibles)']);
   }
   lignes.push(['Fond de caisse laissé', euros_(c.fond) + (alerteFond ? ' (au lieu de ' + euros_(FOND) + ')' : '')]);
   lignes.push(['Enveloppe mise au coffre', euros_(c.enveloppe)]);
   lignes.push(['Observation', c.observation || '—']);
-  const intro = alerteCaisse ? 'Un écart de caisse a été constaté à la clôture.' : 'Le fond de caisse laissé ce soir n’est pas de 100,00 €.';
+  const intro = alerteCaisse ? 'Un écart de caisse a été constaté à la clôture.' + (alerteMvt ? ' Un mouvement exceptionnel a aussi été saisi.' : '')
+    : alerteFond ? 'Le fond de caisse laissé ce soir n’est pas de 100,00 €.' + (alerteMvt ? ' Un mouvement exceptionnel a aussi été saisi.' : '')
+    : 'Un mouvement exceptionnel a été saisi à la clôture' + (aTheo && ecartCaisse === 0 ? ' (la caisse est juste).' : '.');
   envoyer_(r, sujet, intro, lignes);
   props.setProperty(cle, new Date().toISOString());
 }
 
-function mouvementsTexte_(mv) {
-  return (mv || []).map(m => euros_(m.montant, true) + (m.motif ? ' ' + m.motif : '')).join(' ; ');
+function mouvementsTexte_(mv, sep) {
+  return (mv || []).map(m => euros_(m.montant, true) + (m.motif ? ' ' + m.motif : '')).join(sep || ' ; ');
 }
 
 /* ================================================================== */

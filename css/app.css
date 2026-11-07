@@ -470,3 +470,8 @@ code { background: var(--fond-2); padding: 1px 6px; border-radius: 6px; font-siz
 .msg-ecart { color: var(--rouge) !important; }
 .statut.rouge { background: var(--rouge-pale); color: var(--rouge); }
 .bloc.square.ecart-rouge b { color: var(--rouge); }
+
+/* Mouvement exceptionnel : une seule ligne compacte */
+.ligne-total.mvt-l span { font-size: 15px; color: var(--gris); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ligne-total.mvt-l b { display: flex; align-items: center; gap: 2px; white-space: nowrap; }
+.ligne-total.mvt-l .x { border: 0; background: none; font-size: 20px; color: var(--gris); min-width: 32px; min-height: 28px; padding: 0; }

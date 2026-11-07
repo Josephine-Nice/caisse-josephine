@@ -230,8 +230,8 @@ function blocTheorique(b, total) {
   else if (sq.etat === 'erreur' && /^square/.test(sq.erreur || '')) ventesInfo = 'Square a refusé la demande (jeton à reconnecter dans le Google Sheet).';
   else if (sq.etat === 'erreur') ventesInfo = 'Pas de connexion : l’écart sera calculé par le Google Sheet.';
   else ventesInfo = '';
-  const mvts = it.mouvements.map((m, i) => `<div class="mvt"><span>${euros(m.montant, { signe: true })} · ${esc(m.motif || 'sans motif')}</span>
-    <button class="x" data-act="supprimerMouvement" data-i="${i}" aria-label="Retirer ce mouvement">×</button></div>`).join('');
+  const mvts = it.mouvements.map((m, i) => `<div class="ligne-total mvt-l"><span>${esc(m.motif || 'Mouvement exceptionnel')}</span>
+    <b>${euros(m.montant, { signe: true })}<button class="x" data-act="supprimerMouvement" data-i="${i}" aria-label="Retirer ce mouvement">×</button></b></div>`).join('');
   let statut = '';
   if (it.ecart !== null && total > 0) {
     statut = it.ecart === 0 ? '<div class="statut vert">✓ Caisse juste</div>'
@@ -241,9 +241,9 @@ function blocTheorique(b, total) {
     <div class="ligne-total"><span>Caisse du matin</span><b>${euros(it.matin.total)}</b></div>
     <small class="sous-ligne">${matinTxt}</small>
     <div class="ligne-total"><span>Ventes espèces</span><b>${it.ventes === null ? '—' : euros(it.ventes, { signe: true })}</b></div>
-    <small class="sous-ligne">${ventesInfo} <button class="lien mini" data-act="actualiserVentes">Actualiser</button></small>
+    <small class="sous-ligne">${ventesInfo} <button class="lien mini" data-act="actualiserVentes">Actualiser</button> · <button class="lien mini" data-act="ajouterMouvement">+ Mouvement exceptionnel</button></small>
     ${it.remb ? `<div class="ligne-total"><span>Remboursements</span><b>${euros(-it.remb, { signe: true })}</b></div>` : ''}
-    ${it.mouvements.length ? `<div class="ligne-total"><span>Mouvements divers</span><b>${euros(sommeMouvements(it.mouvements), { signe: true })}</b></div>${mvts}` : ''}
+    ${mvts}
     <div class="ligne-total theo"><span>Caisse théorique</span><b>${it.theorique === null ? '—' : euros(it.theorique)}</b></div>
     <div class="ligne-total ecart-l"><span>Écart</span><b class="${it.ecart ? 'txt-ecart' : it.ecart === 0 && total ? 'txt-vert' : ''}">${it.ecart === null || !total ? '—' : euros(it.ecart, { signe: true })}</b></div>
     ${statut}`;
@@ -271,13 +271,14 @@ async function chargerVentes(force = false) {
 }
 
 function ouvrirMouvement() {
-  ouvrirModale(`<h2>Mouvement divers</h2>
+  ouvrirModale(`<h2>Mouvement exceptionnel</h2>
+    <p class="aide">Argent sorti ou entré dans la caisse en dehors des ventes Square. Les responsables seront prévenus par e-mail.</p>
     <div class="segment sens"><button data-act="mvtSens" data-v="-1" class="actif">Sortie d’argent</button><button data-act="mvtSens" data-v="1">Entrée d’argent</button></div>
     <label class="etiquette" for="mvt-montant">Montant</label>
     <input id="mvt-montant" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off">
-    <label class="etiquette" for="mvt-motif">Motif</label>
-    <input id="mvt-motif" type="text" maxlength="60" placeholder="Ex. : lait, appoint, pourboire…" autocomplete="off">
-    <p class="txt-orange" id="mvt-erreur" hidden>Saisissez un montant valide, par exemple 12,50.</p>
+    <label class="etiquette" for="mvt-motif">Commentaire</label>
+    <input id="mvt-motif" type="text" maxlength="80" placeholder="Ex. : remboursement en espèces d’un client payé par CB" autocomplete="off">
+    <p class="txt-orange" id="mvt-erreur" hidden></p>
     <div class="boutons"><button class="secondaire" data-act="fermerModale">Annuler</button>
     <button class="principal" data-act="validerMouvement">Ajouter</button></div>`);
   modale.dataset.sens = '-1';
@@ -672,7 +673,7 @@ function blocControleDetail(c) {
     <div class="ligne-total"><span>Caisse du matin</span><b>${euros(c.matin)}</b></div>
     <div class="ligne-total"><span>Ventes en espèces (Square)</span><b>${euros(c.ventesEspeces, { signe: true })}</b></div>
     ${c.remboursementsEspeces ? `<div class="ligne-total"><span>Remboursements en espèces</span><b>${euros(-c.remboursementsEspeces, { signe: true })}</b></div>` : ''}
-    <div class="ligne-total"><span>Mouvements divers</span><b>${euros(sommeMouvements(c.mouvements), { signe: true })}</b></div>${mv}
+    <div class="ligne-total"><span>Mouvements exceptionnels</span><b>${euros(sommeMouvements(c.mouvements), { signe: true })}</b></div>${mv}
     <div class="ligne-total fort"><span>Caisse théorique</span><b>${euros(c.theorique)}</b></div>
     <div class="ligne-total"><span>Caisse comptée</span><b>${euros(c.total)}</b></div>
     <div class="ligne-total fort"><span>Écart de caisse</span><b class="${c.ecartTheorique ? 'txt-ecart' : 'txt-vert'}">${c.ecartTheorique ? euros(c.ecartTheorique, { signe: true }) : 'Caisse juste'}</b></div>
@@ -835,9 +836,11 @@ const actions = {
   mvtSens: b => { $$('.segment.sens button').forEach(x => x.classList.toggle('actif', x === b)); modale.dataset.sens = b.dataset.v; },
   validerMouvement: () => {
     const montant = centimesSaisis($('#mvt-montant').value);
-    if (!montant) { $('#mvt-erreur').hidden = false; return; }
+    const motif = ($('#mvt-motif').value || '').trim().slice(0, 80);
+    const err = !montant ? 'Saisissez un montant valide, par exemple 12,50.' : !motif ? 'Ajoutez un court commentaire pour expliquer le mouvement.' : '';
+    if (err) { const e = $('#mvt-erreur'); e.textContent = err; e.hidden = false; return; }
     const b = etat.brouillon; if (!b) return;
-    b.mouvements = [...(b.mouvements || []), { montant: Number(modale.dataset.sens) * montant, motif: ($('#mvt-motif').value || '').trim().slice(0, 60) }];
+    b.mouvements = [...(b.mouvements || []), { montant: Number(modale.dataset.sens) * montant, motif }];
     fermerModale(); sauverBrouillon(true); majTotaux();
   },
   supprimerMouvement: b => {
